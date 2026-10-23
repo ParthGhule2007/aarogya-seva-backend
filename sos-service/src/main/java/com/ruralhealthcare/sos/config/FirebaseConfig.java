@@ -52,6 +52,7 @@ public class FirebaseConfig {
             if (credentialsFile == null) {
                 java.io.File[] candidates = new java.io.File[] {
                     new java.io.File("firebase-admin.json"),
+                    new java.io.File("/etc/secrets/firebase-admin.json"),
                     new java.io.File("sos-service/firebase-admin.json"),
                     new java.io.File("../firebase-admin.json")
                 };

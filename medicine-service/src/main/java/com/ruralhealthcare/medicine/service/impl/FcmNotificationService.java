@@ -43,6 +43,7 @@ public class FcmNotificationService implements NotificationService {
             if (!credentialsFile.exists()) {
                 File[] candidates = new File[]{
                         new File("firebase-admin.json"),
+                        new File("/etc/secrets/firebase-admin.json"),
                         new File("../firebase-admin.json"),
                         new File("medicine-service/firebase-admin.json")
                 };
