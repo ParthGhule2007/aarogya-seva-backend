@@ -49,8 +49,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0a2ee5a3-c1ee-459c-ac35-92a313306654"
+        "projectId": "b92b4f03-d2d3-4de5-bb47-60d7e4a2d1c8"
       }
-    }
+    },
+    "owner": "ghuleparth"
   }
 }
