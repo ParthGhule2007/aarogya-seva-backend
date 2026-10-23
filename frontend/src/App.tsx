@@ -1,14 +1,15 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
-import { useSos } from './hooks/useSos';
+import { SosProvider, useSos } from './hooks/useSos';
+import { ConsultationProvider } from './hooks/useConsultation';
 import { Header } from './components/common/Header';
 import { EmergencySosModal } from './components/common/EmergencySosModal';
 import { JitsiCallModal } from './components/common/JitsiCallModal';
 import { PatientWorkspace } from './components/patient/PatientWorkspace';
 import { AshaWorkspace } from './components/asha/AshaWorkspace';
 import { DoctorWorkspace } from './components/doctor/DoctorWorkspace';
-import { FacilityAdminWorkspace } from './components/facility/FacilityAdminWorkspace';
+import { FacilityDashboardPage } from './pages/FacilityDashboardPage';
 import { ShieldCheck, Heart, AlertTriangle } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -26,7 +27,7 @@ const AppContent: React.FC = () => {
         {(role === 'PATIENT' || role === 'CAREGIVER') && <PatientWorkspace />}
         {role === 'ASHA' && <AshaWorkspace />}
         {role === 'DOCTOR' && <DoctorWorkspace />}
-        {role === 'ADMIN' && <FacilityAdminWorkspace />}
+        {(role === 'ADMIN' || role === 'FACILITY_ADMIN') && <FacilityDashboardPage />}
       </main>
 
       {/* Floating Emergency SOS Action Button */}
@@ -86,7 +87,11 @@ export const App: React.FC = () => {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <AppContent />
+        <SosProvider>
+          <ConsultationProvider>
+            <AppContent />
+          </ConsultationProvider>
+        </SosProvider>
       </AuthProvider>
     </LanguageProvider>
   );

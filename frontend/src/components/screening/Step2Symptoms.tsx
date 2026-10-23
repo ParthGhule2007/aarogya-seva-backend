@@ -20,6 +20,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { ChatMessageResponse } from '../../types/chat';
+import { BodyMap, BodySystemRegion } from '../common/medical/BodyMap';
+import { SymptomChip } from '../common/medical/SymptomChip';
+import { VitalsGridDisplay } from '../common/medical/VitalCard';
 
 export interface SymptomsFormData {
   chiefComplaint: string;
@@ -50,21 +53,22 @@ interface SymptomOption {
   hi: string;
   mr: string;
   icon: string;
+  region: Exclude<BodySystemRegion, 'ALL'>;
 }
 
 const RURAL_SYMPTOMS: SymptomOption[] = [
-  { id: 'fever', en: 'Fever', hi: 'बुखार', mr: 'ताप', icon: '🌡️' },
-  { id: 'cough', en: 'Cough', hi: 'खांसी', mr: 'खोकला', icon: '🫁' },
-  { id: 'chest_pain', en: 'Chest Pain', hi: 'छाती में दर्द', mr: 'छातीत दुखणे', icon: '🫀' },
-  { id: 'shortness_of_breath', en: 'Shortness of Breath', hi: 'सांस फूलना', mr: 'दम लागणे', icon: '😮‍💨' },
-  { id: 'headache', en: 'Headache', hi: 'सिरदर्द', mr: 'डोकेदुखी', icon: '🤕' },
-  { id: 'abdominal_pain', en: 'Abdominal Pain', hi: 'पेट दर्द', mr: 'पोटदुखी', icon: '🤢' },
-  { id: 'vomiting', en: 'Vomiting', hi: 'उल्टी', mr: 'उलटी', icon: '🤮' },
-  { id: 'diarrhea', en: 'Diarrhea', hi: 'दस्त', mr: 'जुलाब', icon: '💧' },
-  { id: 'body_ache', en: 'Body Ache', hi: 'बदन दर्द', mr: 'अंगदुखी', icon: '⚡' },
-  { id: 'dizziness', en: 'Dizziness', hi: 'चक्कर आना', mr: 'चक्कर', icon: '💫' },
-  { id: 'cold_sore_throat', en: 'Cold / Sore Throat', hi: 'जुकाम / गले में खराश', mr: 'सर्दी / घसा खवखवणे', icon: '🤧' },
-  { id: 'skin_rash', en: 'Skin Rash', hi: 'त्वचा पर चकत्ते', mr: 'त्वचेवर पुरळ', icon: '🔴' },
+  { id: 'fever', en: 'Fever', hi: 'बुखार', mr: 'ताप', icon: '🌡️', region: 'GENERAL' },
+  { id: 'cough', en: 'Cough', hi: 'खांसी', mr: 'खोकला', icon: '🫁', region: 'CHEST' },
+  { id: 'chest_pain', en: 'Chest Pain', hi: 'छाती में दर्द', mr: 'छातीत दुखणे', icon: '🫀', region: 'CHEST' },
+  { id: 'shortness_of_breath', en: 'Shortness of Breath', hi: 'सांस फूलना', mr: 'दम लागणे', icon: '😮‍💨', region: 'CHEST' },
+  { id: 'headache', en: 'Headache', hi: 'सिरदर्द', mr: 'डोकेदुखी', icon: '🤕', region: 'HEAD' },
+  { id: 'abdominal_pain', en: 'Abdominal Pain', hi: 'पेट दर्द', mr: 'पोटदुखी', icon: '🤢', region: 'ABDOMEN' },
+  { id: 'vomiting', en: 'Vomiting', hi: 'उल्टी', mr: 'उलटी', icon: '🤮', region: 'ABDOMEN' },
+  { id: 'diarrhea', en: 'Diarrhea', hi: 'दस्त', mr: 'जुलाब', icon: '💧', region: 'ABDOMEN' },
+  { id: 'body_ache', en: 'Body Ache', hi: 'बदन दर्द', mr: 'अंगदुखी', icon: '⚡', region: 'LIMBS' },
+  { id: 'dizziness', en: 'Dizziness', hi: 'चक्कर आना', mr: 'चक्कर', icon: '💫', region: 'HEAD' },
+  { id: 'cold_sore_throat', en: 'Cold / Sore Throat', hi: 'जुकाम / गले में खराश', mr: 'सर्दी / घसा खवखवणे', icon: '🤧', region: 'HEAD' },
+  { id: 'skin_rash', en: 'Skin Rash', hi: 'त्वचा पर चकत्ते', mr: 'त्वचेवर पुरळ', icon: '🔴', region: 'GENERAL' },
 ];
 
 const SEVERITY_LEVELS: {
@@ -141,6 +145,7 @@ export const Step2Symptoms: React.FC<Step2SymptomsProps> = ({
   const { language, t } = useLanguage();
 
   const [activeMethod, setActiveMethod] = useState<'form' | 'ai' | 'voice'>('form');
+  const [activeBodyRegion, setActiveBodyRegion] = useState<BodySystemRegion>('ALL');
 
   // AI Chat state
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -214,16 +219,22 @@ export const Step2Symptoms: React.FC<Step2SymptomsProps> = ({
           ? `${prev.notes}\nPatient: ${userMsgText}\nAI: ${reply.content}`
           : `AI Chat intake:\nPatient: ${userMsgText}\nAI: ${reply.content}`,
       }));
-    } catch {
+    } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
           messageId: `err-${Date.now()}`,
           role: 'ASSISTANT',
-          content: 'Recorded symptoms for tele-triage screening.',
+          content: `AI Chat service warning: ${err?.message || 'Unable to reach AI chat assistant'}. Your symptom message "${userMsgText}" has been added to your chief complaint for Step 3 Triage.`,
           createdAt: new Date().toISOString(),
         },
       ]);
+      setFormData((prev) => ({
+        ...prev,
+        notes: prev.notes
+          ? `${prev.notes}\nPatient: ${userMsgText}`
+          : `Patient symptom note: ${userMsgText}`,
+      }));
     } finally {
       setIsAiLoading(false);
     }
@@ -253,10 +264,26 @@ export const Step2Symptoms: React.FC<Step2SymptomsProps> = ({
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       if (transcript) {
+        // Keyword matching across languages
+        const lower = transcript.toLowerCase();
+        const autoDetected: string[] = [];
+        RURAL_SYMPTOMS.forEach((sym) => {
+          if (
+            lower.includes(sym.en.toLowerCase()) ||
+            lower.includes(sym.hi.toLowerCase()) ||
+            lower.includes(sym.mr.toLowerCase())
+          ) {
+            autoDetected.push(sym.en);
+          }
+        });
+
         setFormData((prev) => ({
           ...prev,
+          selectedSymptoms: autoDetected.length > 0
+            ? Array.from(new Set([...prev.selectedSymptoms, ...autoDetected]))
+            : prev.selectedSymptoms,
           chiefComplaint: prev.chiefComplaint ? `${prev.chiefComplaint}, ${transcript}` : transcript,
-          notes: prev.notes ? `${prev.notes}\nVoice Transcript: ${transcript}` : `Voice Transcript: ${transcript}`,
+          notes: prev.notes ? `${prev.notes}\n[Voice]: ${transcript}` : `[Voice]: ${transcript}`,
         }));
       }
     };
@@ -404,102 +431,105 @@ export const Step2Symptoms: React.FC<Step2SymptomsProps> = ({
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {formData.selectedSymptoms.map((sym) => (
-                  <span
+                  <SymptomChip
                     key={sym}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--primary)',
-                      color: 'var(--primary-hover)',
-                      fontWeight: 700,
-                      padding: '0.3rem 0.7rem',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    <span>{sym}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSymptom(sym)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-subtle)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: 0,
-                      }}
-                      title="Remove symptom"
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
+                    name={sym}
+                    severity={currentSeverity}
+                    durationDays={formData.durationDays}
+                    selected
+                    onRemove={() => removeSymptom(sym)}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Touch-Friendly Symptoms Grid */}
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label" style={{ fontSize: '1rem', fontWeight: 700 }}>
-              {language === 'hi'
-                ? 'लक्षणों पर टैप करें (Choose Symptoms):'
-                : language === 'mr'
-                ? 'खालील लक्षणांवर टॅप करा (Choose Symptoms):'
-                : 'Tap to Select Symptoms:'}
-            </label>
+          {/* Interactive Anatomical Body Map + Touch-Friendly Symptoms Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '1.25rem',
+              marginBottom: '1.5rem',
+              alignItems: 'start',
+            }}
+          >
+            <BodyMap
+              activeRegion={activeBodyRegion}
+              onSelectRegion={setActiveBodyRegion}
+              selectedSymptomIds={RURAL_SYMPTOMS.filter((opt) =>
+                formData.selectedSymptoms.includes(opt.en)
+              ).map((opt) =>
+                opt.id === 'shortness_of_breath'
+                  ? 'breathlessness'
+                  : opt.id === 'cold_sore_throat'
+                  ? 'sore_throat'
+                  : opt.id === 'skin_rash'
+                  ? 'rash'
+                  : opt.id
+              )}
+            />
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '0.75rem',
-                marginTop: '0.5rem',
-              }}
-            >
-              {RURAL_SYMPTOMS.map((opt) => {
-                const isSelected = formData.selectedSymptoms.includes(opt.en);
-                const localLabel = language === 'hi' ? opt.hi : language === 'mr' ? opt.mr : '';
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '1rem', fontWeight: 700 }}>
+                {language === 'hi'
+                  ? 'लक्षणों पर टैप करें (Choose Symptoms):'
+                  : language === 'mr'
+                  ? 'खालील लक्षणांवर टॅप करा (Choose Symptoms):'
+                  : 'Tap to Select Symptoms:'}
+              </label>
 
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => toggleSymptom(opt.en)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      minHeight: '56px',
-                      padding: '0.65rem 0.9rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: isSelected ? '2px solid var(--primary)' : '1.5px solid var(--border-medium)',
-                      background: isSelected ? 'var(--primary-light)' : 'var(--bg-surface)',
-                      color: isSelected ? 'var(--primary-hover)' : 'var(--text-main)',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 2px 8px rgba(13, 148, 136, 0.15)' : 'none',
-                    }}
-                  >
-                    <span style={{ fontSize: '1.4rem' }}>{opt.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: isSelected ? 800 : 600, fontSize: '0.95rem' }}>
-                        {opt.en}
-                      </div>
-                      {localLabel && (
-                        <div style={{ fontSize: '0.8rem', color: isSelected ? 'var(--primary)' : 'var(--text-subtle)' }}>
-                          {localLabel}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))',
+                  gap: '0.65rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                {RURAL_SYMPTOMS.filter(
+                  (opt) => activeBodyRegion === 'ALL' || opt.region === activeBodyRegion
+                ).map((opt) => {
+                  const isSelected = formData.selectedSymptoms.includes(opt.en);
+                  const localLabel = language === 'hi' ? opt.hi : language === 'mr' ? opt.mr : opt.mr;
+
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => toggleSymptom(opt.en)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.65rem',
+                        minHeight: '56px',
+                        padding: '0.6rem 0.85rem',
+                        borderRadius: 'var(--radius-md)',
+                        border: isSelected ? '2px solid var(--primary)' : '1.5px solid var(--border-medium)',
+                        background: isSelected ? 'var(--primary-light)' : 'var(--bg-surface)',
+                        color: isSelected ? 'var(--primary-hover)' : 'var(--text-main)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 2px 8px rgba(13, 148, 136, 0.15)' : 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.35rem' }}>{opt.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: isSelected ? 800 : 700, fontSize: '0.9rem' }}>
+                          {opt.en}
                         </div>
-                      )}
-                    </div>
-                    {isSelected && <CheckCircle2 size={20} color="var(--primary)" />}
-                  </button>
-                );
-              })}
+                        {localLabel && (
+                          <div style={{ fontSize: '0.76rem', color: isSelected ? 'var(--primary)' : 'var(--text-subtle)' }}>
+                            {localLabel}
+                          </div>
+                        )}
+                      </div>
+                      {isSelected && <CheckCircle2 size={18} color="var(--primary)" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -730,6 +760,15 @@ export const Step2Symptoms: React.FC<Step2SymptomsProps> = ({
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>Normal: 60 - 100</span>
               </div>
             </div>
+
+            {(formData.vitals.temperatureFahrenheit != null ||
+              formData.vitals.systolicBp != null ||
+              formData.vitals.diastolicBp != null ||
+              formData.vitals.pulseBpm != null) && (
+              <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-light)' }}>
+                <VitalsGridDisplay vitals={formData.vitals} />
+              </div>
+            )}
           </div>
         </div>
       )}

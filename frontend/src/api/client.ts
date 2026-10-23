@@ -1,7 +1,48 @@
 import { ApiResponse, ErrorResponse } from '../types/common';
 
-const BASE_URL = ((import.meta as any).env?.VITE_API_BASE_URL as string) || '';
+const env = ((import.meta as any).env || {}) as Record<string, string | undefined>;
+const BASE_URL = env.VITE_API_BASE_URL || '';
 const TOKEN_KEY = 'aarogya_jwt_token';
+
+function resolveUrl(endpoint: string): string {
+  // In development (running with Vite dev server), always route using relative URLs
+  // so Vite's proxy in vite.config.ts forwards requests cleanly to localhost without CORS errors
+  if (import.meta.env.DEV) {
+    return endpoint;
+  }
+  if (endpoint.startsWith('/api/doctors') && env.VITE_DOCTOR_SERVICE_URL) {
+    return `${env.VITE_DOCTOR_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if (endpoint.startsWith('/api/consultations') && env.VITE_CONSULTATION_SERVICE_URL) {
+    return `${env.VITE_CONSULTATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if (endpoint.startsWith('/api/communications') && env.VITE_COMMUNICATION_SERVICE_URL) {
+    return `${env.VITE_COMMUNICATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if ((endpoint.startsWith('/api/v1/sos') || endpoint.startsWith('/api/v1/devices')) && env.VITE_SOS_SERVICE_URL) {
+    return `${env.VITE_SOS_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if (endpoint.startsWith('/api/v1/chat') && env.VITE_CHAT_SERVICE_URL) {
+    return `${env.VITE_CHAT_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if (
+    (endpoint.startsWith('/api/v1/medications') ||
+      endpoint.startsWith('/api/v1/medication-events') ||
+      endpoint.startsWith('/api/v1/caregivers')) &&
+    env.VITE_MEDICATION_SERVICE_URL
+  ) {
+    return `${env.VITE_MEDICATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  if (
+    (endpoint.startsWith('/api/v1/calls') ||
+      endpoint.startsWith('/api/v1/follow-up') ||
+      endpoint.startsWith('/api/v1/tools')) &&
+    env.VITE_CALLING_SERVICE_URL
+  ) {
+    return `${env.VITE_CALLING_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  }
+  return `${BASE_URL.replace(/\/+$/, '')}${endpoint}`;
+}
 
 export class ApiError extends Error {
   public errorCode: string;
@@ -42,10 +83,10 @@ export const tokenStorage = {
 };
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
-  
+  const url = resolveUrl(endpoint);
+
   const headers = new Headers(options.headers || {});
-  
+
   // Attach JWT Bearer Token if available
   const token = tokenStorage.get();
   if (token && !headers.has('Authorization')) {

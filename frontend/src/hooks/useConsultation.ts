@@ -1,27 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { consultationApi } from '../api/consultationApi';
-import { communicationApi } from '../api/communicationApi';
 import { ConsultationResponseDTO, ConsultationRequestDTO } from '../types/consultation';
-import { CommunicationSessionResponseDTO } from '../types/communication';
 import { useAuth } from '../context/AuthContext';
 
-export const useConsultation = () => {
+const ConsultationContext = createContext<ReturnType<typeof useConsultationInternal> | undefined>(undefined);
+
+const useConsultationInternal = () => {
   const { user, selectedPatientId } = useAuth();
   const [consultations, setConsultations] = useState<ConsultationResponseDTO[]>([]);
   const [pendingQueue, setPendingQueue] = useState<ConsultationResponseDTO[]>([]);
-  const [activeCallSession, setActiveCallSession] = useState<{
-    consultationId: number;
-    meetingUrl: string;
-    roomId?: string;
-    doctorName?: string;
-    patientName?: string;
-  } | null>(null);
+  const [doctorConsultations, setDoctorConsultations] = useState<ConsultationResponseDTO[]>([]);
+  const [activeCallConsultation, setActiveCallConsultation] = useState<ConsultationResponseDTO | null>(null);
+  const [callRole, setCallRole] = useState<'PATIENT' | 'DOCTOR'>('PATIENT');
+  const [participantName, setParticipantName] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUserConsultations = useCallback(async (userId?: string) => {
-    const targetUserId = userId || selectedPatientId || user?.patientId;
+    const targetUserId = userId || selectedPatientId || user?.patientId || (user?.role === 'PATIENT' ? user?.id : undefined);
     if (!targetUserId) return [];
     setIsLoading(true);
     try {
@@ -36,20 +33,34 @@ export const useConsultation = () => {
     }
   }, [selectedPatientId, user]);
 
-  const fetchDoctorQueue = useCallback(async (doctorId?: number) => {
-    const targetDocId = doctorId || (user?.doctorId ? Number(user.doctorId) : 1);
+  const fetchDoctorConsultations = useCallback(async (doctorId?: number) => {
+    const targetDocId = doctorId || (user?.doctorId ? Number(user.doctorId) : undefined);
+    if (!targetDocId) return [];
     setIsLoading(true);
     try {
-      const data = await consultationApi.getPendingConsultationsByDoctorId(targetDocId);
-      setPendingQueue(data || []);
+      const data = await consultationApi.getConsultationsByDoctorId(targetDocId);
+      setDoctorConsultations(data || []);
+      const pending = (data || []).filter((c: ConsultationResponseDTO) => c.status === 'REQUESTED');
+      setPendingQueue(pending);
       return data;
     } catch (err: any) {
-      console.warn('Failed to fetch doctor consultation queue:', err.message);
-      return [];
+      console.warn('Failed to fetch doctor consultations:', err.message);
+      try {
+        const pending = await consultationApi.getPendingConsultationsByDoctorId(targetDocId);
+        setPendingQueue(pending || []);
+        setDoctorConsultations(pending || []);
+        return pending;
+      } catch {
+        return [];
+      }
     } finally {
       setIsLoading(false);
     }
   }, [user]);
+
+  const fetchDoctorQueue = useCallback(async (doctorId?: number) => {
+    return fetchDoctorConsultations(doctorId);
+  }, [fetchDoctorConsultations]);
 
   const bookConsultation = async (req: ConsultationRequestDTO): Promise<ConsultationResponseDTO> => {
     setIsLoading(true);
@@ -69,7 +80,8 @@ export const useConsultation = () => {
   const acceptConsultation = async (consultationId: number) => {
     try {
       const updated = await consultationApi.acceptConsultation(consultationId);
-      setPendingQueue((prev) => prev.map((c) => (c.id === consultationId ? updated : c)));
+      setPendingQueue((prev) => prev.filter((c) => c.id !== consultationId));
+      setDoctorConsultations((prev) => prev.map((c) => (c.id === consultationId ? updated : c)));
       return updated;
     } catch (err: any) {
       setError(err.message || 'Failed to accept consultation');
@@ -81,6 +93,7 @@ export const useConsultation = () => {
     try {
       const updated = await consultationApi.rejectConsultation(consultationId);
       setPendingQueue((prev) => prev.filter((c) => c.id !== consultationId));
+      setDoctorConsultations((prev) => prev.map((c) => (c.id === consultationId ? updated : c)));
       return updated;
     } catch (err: any) {
       setError(err.message || 'Failed to reject consultation');
@@ -88,35 +101,37 @@ export const useConsultation = () => {
     }
   };
 
-  const startConsultation = async (consultationId: number, patientName?: string, doctorName?: string) => {
+  const scheduleConsultation = async (consultationId: number, scheduledAt: string) => {
+    try {
+      const updated = await consultationApi.scheduleConsultation(consultationId, scheduledAt);
+      setPendingQueue((prev) => prev.filter((c) => c.id !== consultationId));
+      setDoctorConsultations((prev) => prev.map((c) => (c.id === consultationId ? updated : c)));
+      return updated;
+    } catch (err: any) {
+      setError(err.message || 'Failed to schedule consultation');
+      throw err;
+    }
+  };
+
+  const launchCall = async (consultation: ConsultationResponseDTO, role: 'PATIENT' | 'DOCTOR', name?: string) => {
     setIsLoading(true);
     try {
-      // Transition consultation to IN_CALL
-      const updated = await consultationApi.startConsultation(consultationId);
-      
-      // Query communication session URL
-      let meetingUrl = updated.meetingUrl || `https://meet.jit.si/AarogyaSeva_Room_${consultationId}`;
-      let roomId = updated.roomId || `AarogyaSeva_Room_${consultationId}`;
-
-      try {
-        const commSession = await communicationApi.getSessionByConsultationId(consultationId);
-        if (commSession && commSession.meetingUrl) {
-          meetingUrl = commSession.meetingUrl;
-          roomId = commSession.roomId;
+      let current = consultation;
+      if (
+        (role === 'DOCTOR' && (current.status === 'ACCEPTED' || current.status === 'READY' || current.status === 'SCHEDULED')) ||
+        (role === 'PATIENT' && current.status === 'READY')
+      ) {
+        try {
+          current = await consultationApi.startConsultation(current.id);
+        } catch (e) {
+          console.warn('Could not transition status to IN_CALL, proceeding with session:', e);
         }
-      } catch {
-        // use fallback meetingUrl
       }
 
-      setActiveCallSession({
-        consultationId,
-        meetingUrl,
-        roomId,
-        doctorName: doctorName || updated.doctorName,
-        patientName: patientName || updated.username,
-      });
-
-      return updated;
+      setCallRole(role);
+      setParticipantName(name || (role === 'DOCTOR' ? (current.doctorName || 'Doctor') : (current.username || 'Patient')));
+      setActiveCallConsultation(current);
+      return current;
     } catch (err: any) {
       setError(err.message || 'Failed to launch consultation call');
       throw err;
@@ -125,13 +140,24 @@ export const useConsultation = () => {
     }
   };
 
+  const startConsultation = async (consultationId: number, patientNameParam?: string, doctorNameParam?: string) => {
+    const existing = doctorConsultations.find((c) => c.id === consultationId) ||
+      consultations.find((c) => c.id === consultationId);
+    if (existing) {
+      return launchCall(existing, user?.role === 'DOCTOR' ? 'DOCTOR' : 'PATIENT', user?.role === 'DOCTOR' ? doctorNameParam : patientNameParam);
+    } else {
+      const fetched = await consultationApi.getConsultationById(consultationId);
+      return launchCall(fetched, user?.role === 'DOCTOR' ? 'DOCTOR' : 'PATIENT', user?.role === 'DOCTOR' ? doctorNameParam : patientNameParam);
+    }
+  };
+
   const completeConsultation = async (consultationId: number) => {
     setIsLoading(true);
     try {
       const completed = await consultationApi.completeConsultation(consultationId);
-      setActiveCallSession(null);
+      setActiveCallConsultation(null);
       if (user?.role === 'DOCTOR') {
-        fetchDoctorQueue();
+        fetchDoctorConsultations();
       } else {
         fetchUserConsultations();
       }
@@ -146,8 +172,12 @@ export const useConsultation = () => {
 
   const cancelConsultation = async (consultationId: number) => {
     try {
-      const cancelled = await consultationApi.cancelConsultation(consultationId, { cancelledBy: user?.role === 'DOCTOR' ? 'DOCTOR' : 'USER' });
+      const cancelled = await consultationApi.cancelConsultation(consultationId, {
+        cancelledBy: user?.role === 'DOCTOR' ? 'DOCTOR' : 'USER',
+      });
       setConsultations((prev) => prev.map((c) => (c.id === consultationId ? cancelled : c)));
+      setDoctorConsultations((prev) => prev.map((c) => (c.id === consultationId ? cancelled : c)));
+      setPendingQueue((prev) => prev.filter((c) => c.id !== consultationId));
       return cancelled;
     } catch (err: any) {
       setError(err.message || 'Failed to cancel consultation');
@@ -156,31 +186,69 @@ export const useConsultation = () => {
   };
 
   const endCallSession = () => {
-    setActiveCallSession(null);
+    setActiveCallConsultation(null);
   };
 
   useEffect(() => {
     if (user?.role === 'DOCTOR') {
-      fetchDoctorQueue();
-    } else if (selectedPatientId || user?.patientId) {
+      fetchDoctorConsultations();
+    } else if (selectedPatientId || user?.patientId || user?.role === 'PATIENT' || user?.id) {
       fetchUserConsultations();
     }
-  }, [user, selectedPatientId, fetchUserConsultations, fetchDoctorQueue]);
+  }, [user, selectedPatientId, fetchUserConsultations, fetchDoctorConsultations]);
+
+  const activeCallSession = activeCallConsultation
+    ? {
+      consultationId: activeCallConsultation.id,
+      meetingUrl:
+        activeCallConsultation.meetingUrl ||
+        `https://${(
+          (import.meta.env.VITE_JITSI_DOMAIN as string) || 'meet.jit.si'
+        )
+          .replace(/^https?:\/\//, '')
+          .replace(/\/+$/, '')}/${activeCallConsultation.roomId || 'consultation-' + activeCallConsultation.id
+        }`,
+      roomId: activeCallConsultation.roomId,
+      doctorName: activeCallConsultation.doctorName,
+      patientName: activeCallConsultation.username,
+    }
+    : null;
 
   return {
     consultations,
     pendingQueue,
+    doctorConsultations,
+    activeCallConsultation,
     activeCallSession,
+    callRole,
+    participantName,
     isLoading,
     error,
     fetchUserConsultations,
     fetchDoctorQueue,
+    fetchDoctorConsultations,
     bookConsultation,
     acceptConsultation,
     rejectConsultation,
+    scheduleConsultation,
+    launchCall,
     startConsultation,
     completeConsultation,
     cancelConsultation,
     endCallSession,
+    setActiveCallConsultation,
   };
 };
+
+export const ConsultationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const value = useConsultationInternal();
+  return React.createElement(ConsultationContext.Provider, { value }, children);
+};
+
+export const useConsultation = () => {
+  const ctx = useContext(ConsultationContext);
+  if (ctx) return ctx;
+  return useConsultationInternal();
+};
+
+export default useConsultation;

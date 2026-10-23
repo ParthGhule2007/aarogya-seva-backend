@@ -1,5 +1,13 @@
 import { apiClient } from './client';
-import { AuthResponse, AuthUser, LoginResponse, RegisterRequest, UserDto } from '../types/auth';
+import {
+  AuthResponse,
+  AuthUser,
+  ForgotPasswordRequest,
+  LoginResponse,
+  RegisterRequest,
+  UpdateProfileRequest,
+  UserDto,
+} from '../types/auth';
 
 /**
  * Normalizes backend AuthResponse, UserDto, or demo user mock objects into a standardized AuthUser
@@ -26,7 +34,7 @@ export function normalizeAuthUser(raw: any): AuthUser {
 
   const patientId = role === 'PATIENT' ? (raw.patientId || associatedId) : undefined;
   const doctorId = role === 'DOCTOR' ? (raw.doctorId || (typeof associatedId === 'number' ? String(associatedId) : associatedId)) : undefined;
-  const facilityId = role === 'ADMIN' ? (raw.facilityId || associatedId) : undefined;
+  const facilityId = (role === 'ADMIN' || role === 'FACILITY_ADMIN') ? (raw.facilityId || associatedId) : undefined;
 
   return {
     id: userObj.id || raw.id,
@@ -64,6 +72,25 @@ export const authApi = {
 
   getMe: async (): Promise<AuthUser> => {
     const raw = await apiClient.get<any>('/api/v1/auth/me');
+    return normalizeAuthUser(raw);
+  },
+
+  forgotPassword: async (request: ForgotPasswordRequest): Promise<void> => {
+    const payload = {
+      username: request.username,
+      phoneOrEmail: request.phoneOrEmail || request.email || request.phoneNumber,
+      newPassword: request.newPassword,
+    };
+    await apiClient.post<any>('/api/v1/auth/forgot-password', payload);
+  },
+
+  updateProfile: async (request: UpdateProfileRequest): Promise<AuthUser> => {
+    const raw = await apiClient.put<any>('/api/v1/auth/profile', request);
+    return normalizeAuthUser(raw);
+  },
+
+  updateLocation: async (latitude: number, longitude: number): Promise<AuthUser> => {
+    const raw = await apiClient.patch<any>('/api/v1/auth/location', { latitude, longitude });
     return normalizeAuthUser(raw);
   },
 };

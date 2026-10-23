@@ -45,6 +45,29 @@ export const consultationApi = {
     ),
 
   /**
+   * GET /api/consultations/doctor/{doctorId}
+   * Retrieves all consultations for a doctor (pending, scheduled, active, completed).
+   */
+  getConsultationsByDoctorId: (
+    doctorId: number
+  ): Promise<ConsultationResponseDTO[]> =>
+    apiClient.get<ConsultationResponseDTO[]>(
+      `/api/consultations/doctor/${doctorId}`
+    ),
+
+  /**
+   * PUT /api/consultations/{id}/schedule
+   * Schedules a consultation for a specific date and time.
+   */
+  scheduleConsultation: (
+    id: number,
+    scheduledAt: string
+  ): Promise<ConsultationResponseDTO> =>
+    apiClient.put<ConsultationResponseDTO>(`/api/consultations/${id}/schedule`, {
+      scheduledAt,
+    }),
+
+  /**
    * PUT /api/consultations/{id}/cancel
    * Patient cancels an active consultation.
    */

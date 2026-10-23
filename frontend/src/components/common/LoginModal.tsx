@@ -1,23 +1,30 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { X, Lock, User, AlertCircle, CheckCircle, UserPlus, Phone, Mail, Stethoscope } from 'lucide-react';
+import { authApi } from '../../api/authApi';
+import { X, Lock, User, AlertCircle, CheckCircle, UserPlus, Phone, Mail, Stethoscope, KeyRound } from 'lucide-react';
 import { UserRole } from '../../types/auth';
 
 interface LoginModalProps {
   onClose: () => void;
-  initialMode?: 'LOGIN' | 'REGISTER';
+  initialMode?: 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD';
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ onClose, initialMode = 'LOGIN' }) => {
   const { login, register, switchDemoRole, error } = useAuth();
   const { t } = useLanguage();
 
-  const [mode, setMode] = useState<'LOGIN' | 'REGISTER'>(initialMode);
+  const [mode, setMode] = useState<'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD'>(initialMode);
   
   // Login fields
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  // Forgot password fields
+  const [fpUsername, setFpUsername] = useState('');
+  const [fpPhoneOrEmail, setFpPhoneOrEmail] = useState('');
+  const [fpNewPassword, setFpNewPassword] = useState('');
+  const [fpSuccessMessage, setFpSuccessMessage] = useState<string | null>(null);
 
   // Register fields
   const [regFullName, setRegFullName] = useState('');
@@ -85,6 +92,37 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, initialMode = '
       onClose();
     } catch (err: any) {
       setLocalError(err.message || 'Demo login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fpUsername.trim() || !fpPhoneOrEmail.trim() || !fpNewPassword) {
+      setLocalError('Please enter your username, registered phone/email, and new password.');
+      return;
+    }
+    if (fpNewPassword.length < 6) {
+      setLocalError('New password must be at least 6 characters.');
+      return;
+    }
+    setIsSubmitting(true);
+    setLocalError(null);
+    setFpSuccessMessage(null);
+    try {
+      const isEmail = fpPhoneOrEmail.includes('@');
+      await authApi.forgotPassword({
+        username: fpUsername.trim(),
+        phoneNumber: isEmail ? undefined : fpPhoneOrEmail.trim(),
+        email: isEmail ? fpPhoneOrEmail.trim() : undefined,
+        newPassword: fpNewPassword,
+      });
+      setFpSuccessMessage('Password reset successfully! You can now sign in with your new password.');
+      setUsername(fpUsername.trim());
+      setPassword(fpNewPassword);
+    } catch (err: any) {
+      setLocalError(err.message || 'Password reset failed. Verify username and registered phone/email.');
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +239,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, initialMode = '
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => { setMode('FORGOT_PASSWORD'); setLocalError(null); setFpSuccessMessage(null); }}
+                >
+                  Forgot Password?
+                </button>
                 <button
                   type="button"
                   style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
@@ -263,6 +308,113 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, initialMode = '
               </button>
               <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                 {isSubmitting ? t('loggingIn') : t('login')}
+              </button>
+            </div>
+          </form>
+        ) : mode === 'FORGOT_PASSWORD' ? (
+          <form onSubmit={handleForgotPasswordSubmit}>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-subtle)', marginBottom: '1rem' }}>
+                Verify your username and registered mobile number or email to reset your password.
+              </p>
+
+              {localError && (
+                <div className="alert-box danger" style={{ marginBottom: '1rem' }}>
+                  <AlertCircle size={20} />
+                  <span>{localError}</span>
+                </div>
+              )}
+
+              {fpSuccessMessage && (
+                <div className="alert-box success" style={{ marginBottom: '1rem' }}>
+                  <CheckCircle size={20} />
+                  <span>{fpSuccessMessage}</span>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="fp-username">
+                  {t('username')} *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="fp-username"
+                    type="text"
+                    className="form-control"
+                    style={{ paddingLeft: '2.5rem' }}
+                    value={fpUsername}
+                    onChange={(e) => setFpUsername(e.target.value)}
+                    placeholder="e.g. patient.ramesh"
+                    required
+                  />
+                  <User
+                    size={18}
+                    style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="fp-contact">
+                  Registered Mobile Number or Email *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="fp-contact"
+                    type="text"
+                    className="form-control"
+                    style={{ paddingLeft: '2.5rem' }}
+                    value={fpPhoneOrEmail}
+                    onChange={(e) => setFpPhoneOrEmail(e.target.value)}
+                    placeholder="e.g. 9822012345 or email@ruralhealth.org"
+                    required
+                  />
+                  <Phone
+                    size={18}
+                    style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="fp-newpass">
+                  New Password *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    id="fp-newpass"
+                    type="password"
+                    className="form-control"
+                    style={{ paddingLeft: '2.5rem' }}
+                    value={fpNewPassword}
+                    onChange={(e) => setFpNewPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    required
+                  />
+                  <KeyRound
+                    size={18}
+                    style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
+                  onClick={() => { setMode('LOGIN'); setLocalError(null); }}
+                >
+                  Back to Login
+                </button>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" className="btn btn-outline" onClick={() => setMode('LOGIN')}>
+                {t('cancel')}
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Resetting...' : 'Reset Password'}
               </button>
             </div>
           </form>

@@ -5,8 +5,14 @@ import { Medication, ScheduledDose, Caregiver, CaregiverEscalation, OcrExtractio
 import { useAuth } from '../context/AuthContext';
 
 export const useMedicine = () => {
-  const { user, selectedPatientId } = useAuth();
-  const patientId = selectedPatientId || user?.patientId || 'b1000000-0000-0000-0000-000000000001';
+  const { user, selectedPatientId, role } = useAuth();
+  
+  // Trusted patient ID resolution:
+  // For PATIENT role, use authenticated patientId (or selected fallback)
+  // For CAREGIVER or clinical roles, use selected patient or linked patient
+  const patientId = role === 'PATIENT'
+    ? (user?.patientId || selectedPatientId)
+    : (selectedPatientId || user?.patientId);
 
   const [todaySchedule, setTodaySchedule] = useState<ScheduledDose[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -23,6 +29,7 @@ export const useMedicine = () => {
       setTodaySchedule(data || []);
     } catch (err: any) {
       console.warn('Failed to load today medication schedule:', err.message);
+      setError(err.message);
     }
   }, [patientId]);
 
@@ -65,7 +72,7 @@ export const useMedicine = () => {
       // Optimistic update
       setTodaySchedule((prev) =>
         prev.map((d) =>
-          d.eventId === eventId
+          d.eventId === eventId || d.id === eventId
             ? { ...d, status: action === 'taken' ? 'TAKEN' : action === 'missed' ? 'MISSED' : 'SKIPPED' }
             : d
         )
@@ -77,24 +84,25 @@ export const useMedicine = () => {
     }
   };
 
-  const addMedication = async (med: Partial<Medication>): Promise<Medication> => {
+  const addMedication = async (med: any, imageFile?: File): Promise<Medication> => {
     setIsLoading(true);
+    setError(null);
     try {
       const effectiveName = med.name || med.medicineName || 'Medication';
       const effectiveTimes = med.reminderTimes && med.reminderTimes.length > 0 ? med.reminderTimes : ['08:00:00'];
       const payload = {
         patientId: med.patientId || patientId,
         name: effectiveName,
-        dosageAmount: med.dosageAmount || 1,
+        dosageAmount: Number(med.dosageAmount) || 1,
         dosageUnit: med.dosageUnit || 'TABLET',
         timesPerDay: med.timesPerDay || effectiveTimes.length,
         reminderTimes: effectiveTimes,
         startDate: med.startDate || new Date().toISOString().split('T')[0],
-        endDate: med.endDate,
+        endDate: med.endDate || undefined,
         foodInstruction: med.foodInstruction || 'NONE',
         instructions: med.instructions || '',
       };
-      const created = await medicationApi.addMedication(payload as any);
+      const created = await medicationApi.addMedication(payload as any, imageFile);
       setMedications((prev) => [created, ...prev]);
       fetchSchedule();
       return created;
@@ -106,17 +114,35 @@ export const useMedicine = () => {
     }
   };
 
-  const scanPillPhoto = async (file: File): Promise<OcrExtractionResult> => {
-    setIsOcrLoading(true);
+  const updateMedication = async (id: string, updates: any): Promise<Medication> => {
+    setIsLoading(true);
     setError(null);
     try {
-      const result = await medicationApi.extractOcr(file);
-      return result;
+      const updated = await medicationApi.updateMedication(id, updates);
+      setMedications((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      fetchSchedule();
+      return updated;
     } catch (err: any) {
-      setError(err.message || 'OCR extraction failed');
+      setError(err.message || 'Failed to update medication');
       throw err;
     } finally {
-      setIsOcrLoading(false);
+      setIsLoading(false);
+    }
+  };
+
+  const discontinueMedication = async (id: string): Promise<Medication> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const discontinued = await medicationApi.discontinueMedication(id);
+      setMedications((prev) => prev.map((m) => (m.id === id ? discontinued : m)));
+      fetchSchedule();
+      return discontinued;
+    } catch (err: any) {
+      setError(err.message || 'Failed to discontinue medication');
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,12 +155,24 @@ export const useMedicine = () => {
         phoneNumber: req.phoneNumber || req.contactNumber || '',
         email: req.email || '',
         preferredChannel: req.preferredChannel || 'WHATSAPP',
+        consentGiven: req.consentGiven !== undefined ? req.consentGiven : true,
       };
       const created = await caregiverApi.addCaregiver(payload as any);
       setCaregivers((prev) => [...prev, created]);
       return created;
     } catch (err: any) {
       setError(err.message || 'Failed to add caregiver');
+      throw err;
+    }
+  };
+
+  const updateCaregiver = async (id: string, req: Partial<Caregiver>): Promise<Caregiver> => {
+    try {
+      const updated = await caregiverApi.updateCaregiver(id, req);
+      setCaregivers((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      return updated;
+    } catch (err: any) {
+      setError(err.message || 'Failed to update caregiver');
       throw err;
     }
   };
@@ -159,6 +197,7 @@ export const useMedicine = () => {
   }, [patientId, fetchSchedule, fetchMedications, fetchCaregivers, fetchEscalations]);
 
   return {
+    patientId,
     todaySchedule,
     medications,
     caregivers,
@@ -172,8 +211,10 @@ export const useMedicine = () => {
     fetchEscalations,
     markDose,
     addMedication,
-    scanPillPhoto,
+    updateMedication,
+    discontinueMedication,
     addCaregiver,
+    updateCaregiver,
     deleteCaregiver,
   };
 };

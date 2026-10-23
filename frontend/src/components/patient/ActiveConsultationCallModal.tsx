@@ -1,32 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Video,
-  Phone,
   PhoneOff,
   ExternalLink,
   AlertCircle,
   Clock,
   User,
   ShieldCheck,
-  CheckCircle2,
+  RefreshCw,
+  Camera,
+  Mic,
+  Maximize2,
 } from 'lucide-react';
 import { consultationApi } from '../../api/consultationApi';
 import { ConsultationResponseDTO } from '../../types/consultation';
 
-interface ActiveConsultationCallModalProps {
+export interface ActiveConsultationCallModalProps {
   consultation: ConsultationResponseDTO;
+  role?: 'PATIENT' | 'DOCTOR';
+  participantName?: string;
   onClose: () => void;
-  onCompleted: (consultation: ConsultationResponseDTO) => void;
+  onCompleted?: (consultation: ConsultationResponseDTO) => void;
 }
 
 export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalProps> = ({
   consultation,
+  role = 'PATIENT',
+  participantName: initialParticipantName,
   onClose,
   onCompleted,
 }) => {
   const [seconds, setSeconds] = useState(0);
   const [isEnding, setIsEnding] = useState(false);
   const [endError, setEndError] = useState<string | null>(null);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [isLoadingCall, setIsLoadingCall] = useState(true);
+
+  // Resolved display name
+  const participantName =
+    initialParticipantName ||
+    (role === 'DOCTOR'
+      ? consultation.doctorName || 'Doctor'
+      : consultation.username || 'Patient');
+
+  // Resolved Jitsi domain from environment variable or default
+  const jitsiDomain = (
+    (import.meta.env.VITE_JITSI_DOMAIN as string) || 'meet.jit.si'
+  )
+    .replace(/^https?:\/\//, '')
+    .replace(/\/+$/, '');
+
+  // Persistent room ID correlation key
+  const roomId =
+    consultation.roomId || `consultation-${consultation.id}`;
+
+  // Formatted Jitsi URL with prejoin disabled and participant name passed
+  const cleanBase = consultation.meetingUrl
+    ? consultation.meetingUrl.split('#')[0]
+    : `https://${jitsiDomain}/${roomId}`;
+
+  const meetingUrlWithParams = `${cleanBase}#userInfo.displayName=${encodeURIComponent(
+    participantName
+  )}&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.disableDeepLinking=true`;
 
   // Call duration counter
   useEffect(() => {
@@ -39,24 +74,40 @@ export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalPr
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}`;
+  };
+
+  const handleReconnect = () => {
+    setIsLoadingCall(true);
+    setIframeKey((prev) => prev + 1);
   };
 
   const handleEndCall = async () => {
-    if (!window.confirm('Do you want to end and complete this consultation? (आपण हा सल्ला संपवू इच्छिता का?)')) {
+    const confirmMessage =
+      role === 'DOCTOR'
+        ? 'Do you want to end and complete this consultation? (आपण हा सल्ला संपवून पूर्ण करू इच्छिता का?)'
+        : 'Do you want to leave and mark consultation complete? (आपण हा सल्ला संपवू इच्छिता का?)';
+
+    if (!window.confirm(confirmMessage)) {
       return;
     }
+
     setIsEnding(true);
     setEndError(null);
     try {
-      // Calls Consultation Service PUT /api/consultations/{id}/complete
-      // Which completes consultation, releases doctor in Doctor Service, and ends session in Communication Service
       const updated = await consultationApi.completeConsultation(consultation.id);
-      onCompleted(updated);
+      if (onCompleted) {
+        onCompleted(updated);
+      } else {
+        onClose();
+      }
     } catch (err: any) {
       console.error('Failed to complete consultation:', err);
       setEndError(
-        err.message || 'Connection problem while ending consultation. Please try again.'
+        err.message ||
+          'Connection problem while ending consultation. Please try again.'
       );
       setIsEnding(false);
     }
@@ -73,8 +124,8 @@ export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalPr
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
-        zIndex: 200,
+        backgroundColor: 'rgba(15, 23, 42, 0.96)',
+        zIndex: 250,
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -84,7 +135,7 @@ export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalPr
         style={{
           backgroundColor: '#0F172A',
           color: '#FFFFFF',
-          padding: '1rem 1.5rem',
+          padding: '0.85rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -93,72 +144,143 @@ export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalPr
           gap: '1rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* Left Side: Participant Identity & Doctor/Patient Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <div
             style={{
-              width: '46px',
-              height: '46px',
+              width: '44px',
+              height: '44px',
               borderRadius: '50%',
-              backgroundColor: 'var(--secondary)',
+              backgroundColor:
+                role === 'DOCTOR' ? '#0D9488' : 'var(--secondary, #059669)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#FFFFFF',
               fontWeight: 800,
-              fontSize: '1.2rem',
+              fontSize: '1.1rem',
             }}
           >
-            Dr
+            {role === 'DOCTOR' ? 'Dr' : 'Pt'}
           </div>
           <div>
             <h2
               id="active-call-title"
-              style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}
+              style={{
+                fontSize: '1.15rem',
+                fontWeight: 800,
+                margin: 0,
+                color: '#FFFFFF',
+              }}
             >
-              {consultation.doctorName || `Doctor #${consultation.doctorId}`}
+              {role === 'DOCTOR'
+                ? `Patient: ${consultation.username || 'Patient Case #' + consultation.id}`
+                : `Doctor: ${consultation.doctorName || 'Doctor #' + consultation.doctorId}`}
             </h2>
-            <div style={{ fontSize: '0.9rem', color: '#94A3B8' }}>
-              Consultation in Progress • सल्ला सुरू आहे
+            <div style={{ fontSize: '0.85rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>Joined as <strong>{participantName}</strong> ({role})</span>
+              <span>•</span>
+              <span>Room: {roomId.slice(0, 22)}...</span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* Right Side: Timer, Reconnect, Fullscreen External Link */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Duration Badge */}
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
               backgroundColor: '#1E293B',
-              padding: '0.4rem 0.85rem',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '1rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '9999px',
+              fontSize: '0.95rem',
               fontWeight: 700,
               color: '#38BDF8',
+              border: '1px solid #334155',
             }}
           >
             <Clock size={16} />
             <span>{formatTime(seconds)}</span>
           </div>
 
-          {consultation.meetingUrl && (
-            <a
-              href={consultation.meetingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-large btn-outline"
-              style={{
-                color: '#FFFFFF',
-                borderColor: '#475569',
-                padding: '0.5rem 0.85rem',
-                fontSize: '0.85rem',
-                textDecoration: 'none',
-              }}
-            >
-              <ExternalLink size={16} />
-              <span>Open in Full Screen • पूर्ण पडद्यावर</span>
-            </a>
-          )}
+          {/* Reconnect button */}
+          <button
+            onClick={handleReconnect}
+            title="Reconnect video session"
+            style={{
+              background: '#1E293B',
+              border: '1px solid #334155',
+              color: '#F8FAFC',
+              borderRadius: '8px',
+              padding: '0.4rem 0.75rem',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontWeight: 600,
+            }}
+          >
+            <RefreshCw size={14} />
+            <span>Reconnect</span>
+          </button>
+
+          {/* Open In New Window for browser restrictions / mobile */}
+          <a
+            href={meetingUrlWithParams}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#FFFFFF',
+              border: '1px solid #475569',
+              background: 'rgba(255,255,255,0.08)',
+              padding: '0.4rem 0.75rem',
+              fontSize: '0.85rem',
+              textDecoration: 'none',
+              borderRadius: '8px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontWeight: 600,
+            }}
+          >
+            <Maximize2 size={14} />
+            <span>Full Screen Window</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Permission & Inactivity Helper Banner */}
+      <div
+        style={{
+          backgroundColor: '#1E293B',
+          color: '#CBD5E1',
+          padding: '0.5rem 1.5rem',
+          fontSize: '0.85rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid #334155',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <ShieldCheck size={16} color="#10B981" />
+          <span>
+            Encrypted Rural Teleconsultation • Ensure camera & microphone access are enabled.
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: '#94A3B8' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Camera size={14} /> Camera Active
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+            <Mic size={14} /> Mic Active
+          </span>
         </div>
       </div>
 
@@ -172,79 +294,115 @@ export const ActiveConsultationCallModal: React.FC<ActiveConsultationCallModalPr
         </div>
       )}
 
-      {/* Main Call View Area */}
-      <div style={{ flex: 1, position: 'relative', backgroundColor: '#000000' }}>
-        {consultation.meetingUrl ? (
-          <iframe
-            src={consultation.meetingUrl}
-            title="Teleconsultation Video Session"
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              display: 'block',
-            }}
-            allow="camera; microphone; display-capture; autoplay"
-          />
-        ) : (
+      {/* Main Jitsi Call Container */}
+      <div style={{ flex: 1, position: 'relative', backgroundColor: '#000000', overflow: 'hidden' }}>
+        {isLoadingCall && (
           <div
             style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#0F172A',
               color: '#FFFFFF',
-              textAlign: 'center',
-              padding: '3rem 1.5rem',
-              maxWidth: '480px',
-              margin: '0 auto',
+              zIndex: 10,
+              gap: '1rem',
             }}
           >
-            <AlertCircle size={48} color="#F87171" style={{ margin: '0 auto 1rem auto' }} />
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>
-              Connection Problem • संपर्क समस्या
-            </h3>
-            <p style={{ color: '#94A3B8' }}>
-              The consultation meeting room could not be loaded. Please try again.
-            </p>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                border: '4px solid #38BDF8',
+                borderTopColor: 'transparent',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
+            <div style={{ fontSize: '1.15rem', fontWeight: 700 }}>
+              Connecting to secure consultation room...
+            </div>
+            <div style={{ color: '#94A3B8', fontSize: '0.9rem' }}>
+              कृपया थांबा, सुरक्षित व्हिडिओ रूम सुरू होत आहे...
+            </div>
           </div>
         )}
+
+        <iframe
+          key={iframeKey}
+          src={meetingUrlWithParams}
+          title="Teleconsultation Video Session"
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            display: 'block',
+          }}
+          allow="camera; microphone; display-capture; autoplay; clipboard-write"
+          onLoad={() => setIsLoadingCall(false)}
+        />
       </div>
 
-      {/* Bottom Control Bar */}
+      {/* Bottom Controls Bar */}
       <div
         style={{
           backgroundColor: '#0F172A',
-          padding: '1.25rem 1.5rem',
+          padding: '1rem 1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '1.5rem',
           borderTop: '2px solid #334155',
+          flexWrap: 'wrap',
         }}
       >
         <button
-          className="btn-large"
           style={{
             backgroundColor: '#DC2626',
             color: '#FFFFFF',
             border: 'none',
-            borderRadius: 'var(--radius-full)',
-            padding: '1rem 2.5rem',
-            fontSize: '1.2rem',
+            borderRadius: '9999px',
+            padding: '0.85rem 2.25rem',
+            fontSize: '1.1rem',
             fontWeight: 800,
-            cursor: 'pointer',
+            cursor: isEnding ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             boxShadow: '0 4px 15px rgba(220, 38, 38, 0.4)',
+            transition: 'transform 0.1s ease',
           }}
           onClick={handleEndCall}
           disabled={isEnding}
-          aria-label="End Consultation"
+          aria-label="End and Complete Consultation"
         >
-          <PhoneOff size={26} />
+          <PhoneOff size={24} />
           <span>
             {isEnding
-              ? 'Ending Consultation...'
-              : 'End Consultation • सल्ला संपवा'}
+              ? 'Completing Consultation...'
+              : 'End & Complete Consultation • सल्ला संपवा'}
           </span>
+        </button>
+
+        <button
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            color: '#94A3B8',
+            border: '1px solid #475569',
+            borderRadius: '9999px',
+            padding: '0.85rem 1.5rem',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Minimize Window • विंडो लहान करा
         </button>
       </div>
     </div>

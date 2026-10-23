@@ -79,6 +79,15 @@ export const ScreeningWizard: React.FC<ScreeningWizardProps> = ({ onComplete }) 
 
       // 2. Open Healthcare Case in Core backend
       const channel: IntakeChannel = role === 'ASHA' ? 'COMMUNITY_HEALTH_WORKER' : 'FORM';
+      const hasVitals = Boolean(
+        formData.vitals && (
+          formData.vitals.temperatureFahrenheit != null ||
+          formData.vitals.systolicBp != null ||
+          formData.vitals.diastolicBp != null ||
+          formData.vitals.pulseBpm != null
+        )
+      );
+
       const createdCase = await caseApi.createCase({
         patientId,
         intakeChannel: channel,
@@ -87,6 +96,7 @@ export const ScreeningWizard: React.FC<ScreeningWizardProps> = ({ onComplete }) 
         notes: formData.notes || undefined,
         latitude: 18.2562,
         longitude: 74.9048,
+        vitals: hasVitals ? formData.vitals : undefined,
       });
 
       setCreatedCaseId(createdCase.id);
@@ -186,6 +196,7 @@ export const ScreeningWizard: React.FC<ScreeningWizardProps> = ({ onComplete }) 
         <Step4Facilities
           selectedFacility={selectedFacility}
           setSelectedFacility={setSelectedFacility}
+          aiAnalysis={aiAnalysis}
           onNext={() => setCurrentStep(5)}
           onBack={() => setCurrentStep(3)}
         />

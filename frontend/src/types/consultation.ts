@@ -57,6 +57,10 @@ export interface CancelConsultationDTO {
   cancelledBy: CancelledBy;
 }
 
+export interface ScheduleConsultationDTO {
+  scheduledAt: string;
+}
+
 export interface ConsultationErrorResponseDTO {
   timestamp?: string;
   status: number;

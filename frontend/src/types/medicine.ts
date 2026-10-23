@@ -1,7 +1,15 @@
 // ===== ENUMS (mirroring backend Java enums) =====
 
 export type DosageUnit = 'TABLET' | 'ML' | 'MG' | 'G' | 'CAPSULE' | 'DROP' | 'PATCH' | 'SACHET' | 'UNIT';
-export type FoodInstruction = 'BEFORE_MEAL' | 'AFTER_MEAL' | 'WITH_MEAL' | 'EMPTY_STOMACH' | 'NONE';
+export type FoodInstruction =
+  | 'BEFORE_FOOD'
+  | 'AFTER_FOOD'
+  | 'WITH_FOOD'
+  | 'EMPTY_STOMACH'
+  | 'NONE'
+  | 'BEFORE_MEAL'
+  | 'AFTER_MEAL'
+  | 'WITH_MEAL';
 export type MedicationStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
 export type DoseStatus = 'PENDING' | 'TAKEN' | 'MISSED' | 'SKIPPED';
 export type NotificationChannel = 'WHATSAPP' | 'SMS' | 'CALL' | 'EMAIL';
@@ -34,8 +42,8 @@ export interface Medication {
   active?: boolean;               // alias for status === 'ACTIVE'
   foodInstruction: FoodInstruction;
   instructions?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  frequency?: string;             // UI helper
+  photoUrl?: string;              // alias for imageUrl
 }
 
 /**
@@ -96,6 +104,8 @@ export interface Caregiver {
   preferredChannel: NotificationChannel;
   isActive: boolean;              // backend field is "isActive" (NOT active)
   active?: boolean;               // alias
+  userId?: string;
+  consentGiven?: boolean;         // user authorization for health alerts
   notifyOnMissedDose?: boolean;   // alias for UI
   createdAt?: string;
   updatedAt?: string;
@@ -113,6 +123,30 @@ export interface CreateCaregiverPayload {
   contactNumber?: string;         // alias
   email?: string;                 // max 150
   preferredChannel: NotificationChannel;  // required, default WHATSAPP
+  userId?: string;
+  consentGiven?: boolean;
+}
+
+export interface UpdateCaregiverPayload {
+  name?: string;
+  relationship?: string;
+  phoneNumber?: string;
+  email?: string;
+  preferredChannel?: NotificationChannel;
+  userId?: string;
+  consentGiven?: boolean;
+}
+
+export interface UpdateMedicationPayload {
+  name?: string;
+  dosageAmount?: number;
+  dosageUnit?: DosageUnit;
+  timesPerDay?: number;
+  reminderTimes?: string[];
+  endDate?: string;
+  foodInstruction?: FoodInstruction;
+  instructions?: string;
+  status?: MedicationStatus;
 }
 
 /**
@@ -126,8 +160,16 @@ export interface CaregiverEscalation {
   consecutiveMissedCount?: number;
   triggeredAt?: string;
   caregiverNotified?: boolean;
+  caregiverName?: string;
+  recipient?: string;
+  deliveryStatus?: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
+  messageContent?: string;
+  providerReference?: string;
+  deliveryAttemptedAt?: string;
+  sentAt?: string;
   notifiedAt?: string;
   channel?: NotificationChannel;
+  createdAt?: string;
 }
 
 export interface OcrExtractionResult {
@@ -155,12 +197,20 @@ export interface OcrExtractionResult {
 /**
  * Compute TimeSlot from scheduledTime like "08:00:00"
  */
-export function computeTimeSlot(scheduledTime: string): TimeSlot {
+export function computeTimeSlot(scheduledTime: any): TimeSlot {
   if (!scheduledTime) return 'MORNING';
-  const hour = parseInt(scheduledTime.split(':')[0], 10);
-  if (hour >= 6 && hour < 12) return 'MORNING';
-  if (hour >= 12 && hour < 18) return 'AFTERNOON';
-  if (hour >= 18 && hour < 22) return 'EVENING';
+  let hour = 8;
+  if (Array.isArray(scheduledTime)) {
+    hour = Number(scheduledTime[0]) || 8;
+  } else if (typeof scheduledTime === 'string') {
+    hour = parseInt(scheduledTime.split(':')[0], 10);
+  } else if (typeof scheduledTime === 'number') {
+    hour = scheduledTime;
+  }
+  if (isNaN(hour)) return 'MORNING';
+  if (hour >= 5 && hour < 12) return 'MORNING';
+  if (hour >= 12 && hour < 17) return 'AFTERNOON';
+  if (hour >= 17 && hour < 21) return 'EVENING';
   return 'NIGHT';
 }
 

@@ -33,6 +33,7 @@ export interface ReferralResponseDto {
   requestedAt: string;
   respondedAt?: string;
   acceptedAt?: string;
+  arrivedAt?: string;
   completedAt?: string;
   createdAt?: string;
   updatedAt?: string;

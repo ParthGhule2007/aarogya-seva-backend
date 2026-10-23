@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { AuthUser, RegisterRequest, UserRole } from '../types/auth';
 import { authApi, normalizeAuthUser } from '../api/authApi';
+import { doctorApi } from '../api/doctorApi';
 import { tokenStorage } from '../api/client';
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ const DEMO_CREDENTIALS: Record<UserRole, { username: string; pass: string }> = {
   ASHA: { username: 'asha.sunita', pass: 'Password@123' },
   DOCTOR: { username: 'doctor.ananya', pass: 'Password@123' },
   ADMIN: { username: 'admin', pass: 'Password@123' },
+  FACILITY_ADMIN: { username: 'facility.indapur', pass: 'Password@123' },
   CAREGIVER: { username: 'caregiver.suresh', pass: 'Password@123' },
 };
 
@@ -54,7 +56,16 @@ const DEMO_USERS: Record<UserRole, AuthUser> = {
     email: 'admin.phc@ruralhealth.org',
     role: 'ADMIN',
     displayName: 'Facility Administrator',
-    facilityId: 'f1000000-0000-0000-0000-000000000001',
+    facilityId: 'c2000000-0000-0000-0000-000000000002',
+    associatedEntityId: 'c2000000-0000-0000-0000-000000000002',
+  },
+  FACILITY_ADMIN: {
+    username: 'facility.indapur',
+    email: 'facility.indapur@ruralhealth.org',
+    role: 'FACILITY_ADMIN',
+    displayName: 'Indapur SDH Administrator',
+    facilityId: 'c2000000-0000-0000-0000-000000000002',
+    associatedEntityId: 'c2000000-0000-0000-0000-000000000002',
   },
   CAREGIVER: {
     username: 'caregiver.suresh',
@@ -112,6 +123,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     try {
       const me = await authApi.getMe();
+      if (me.role === 'DOCTOR' && me.id && !me.doctorId) {
+        try {
+          const doc = await doctorApi.getDoctorByUserId(me.id);
+          if (doc) {
+            me.doctorId = String(doc.doctorId || doc.id);
+          }
+        } catch {
+          // Profile may be registered later
+        }
+      }
       setUser(me);
       if (me.role === 'PATIENT') {
         if (me.patientId) {
@@ -156,6 +177,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         tokenStorage.set(res.token);
       }
       const authUser = normalizeAuthUser(res);
+      if (authUser.role === 'DOCTOR' && authUser.id && !authUser.doctorId) {
+        try {
+          const doc = await doctorApi.getDoctorByUserId(authUser.id);
+          if (doc) {
+            authUser.doctorId = String(doc.doctorId || doc.id);
+          }
+        } catch {
+          // Profile may be registered later
+        }
+      }
       setUser(authUser);
       if (authUser.role === 'PATIENT' && authUser.patientId) {
         setSelectedPatientId(authUser.patientId);

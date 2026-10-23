@@ -76,19 +76,6 @@ export const useDoctor = () => {
         }
       }
 
-      // 3. Fallback to seeded doctor id 1 for quick development testing
-      try {
-        const seeded = await doctorApi.getDoctorById(1);
-        if (seeded) {
-          setCurrentDoctor(seeded);
-          if (seeded.availabilityStatus) {
-            setAvailability(seeded.availabilityStatus as DoctorAvailabilityStatus);
-          }
-          return seeded;
-        }
-      } catch {
-        // No seeded doctor
-      }
       return null;
     } catch (err: any) {
       console.warn('Failed to fetch current doctor profile:', err.message);
@@ -120,7 +107,10 @@ export const useDoctor = () => {
   };
 
   const updateAvailability = async (newStatus: DoctorAvailabilityStatus) => {
-    const docId = currentDoctor?.doctorId || currentDoctor?.id || (user?.doctorId ? Number(user.doctorId) : 1);
+    const docId = currentDoctor?.doctorId || currentDoctor?.id || (user?.doctorId ? Number(user.doctorId) : undefined);
+    if (!docId) {
+      throw new Error('No doctor profile found for current user');
+    }
     setIsLoading(true);
     try {
       const updated = await doctorApi.updateAvailability(docId, newStatus);

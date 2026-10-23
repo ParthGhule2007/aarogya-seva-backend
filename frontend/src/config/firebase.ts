@@ -52,8 +52,7 @@ export const requestFcmToken = async (): Promise<string | null> => {
     // Register service worker if not already registered
     let registration: ServiceWorkerRegistration | undefined;
     if ('serviceWorker' in navigator) {
-      const swUrl = `/firebase-messaging-sw.js?apiKey=${encodeURIComponent(import.meta.env.VITE_FIREBASE_API_KEY || '')}&projectId=${encodeURIComponent(import.meta.env.VITE_FIREBASE_PROJECT_ID || '')}&messagingSenderId=${encodeURIComponent(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '')}&appId=${encodeURIComponent(import.meta.env.VITE_FIREBASE_APP_ID || '')}`;
-      registration = await navigator.serviceWorker.register(swUrl);
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       await navigator.serviceWorker.ready;
     }
 

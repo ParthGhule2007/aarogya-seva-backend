@@ -144,22 +144,10 @@ export const usePatient = () => {
       const created = await patientApi.registerPatient(req);
       setPatients((prev) => [created, ...prev]);
       return created;
-    } catch {
-      // Demo simulated registration
-      const mockCreated: PatientDto = {
-        id: `p-${Date.now()}`,
-        fullName: req.fullName,
-        gender: req.gender,
-        contactNumber: req.contactNumber,
-        dateOfBirth: req.dateOfBirth,
-        age: 35,
-        address: req.address || {
-          village: req.villageTown || 'Local',
-          district: req.district || 'Pune',
-        },
-      };
-      setPatients((prev) => [mockCreated, ...prev]);
-      return mockCreated;
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to register patient in Core service';
+      setError(errMsg);
+      throw new Error(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -177,19 +165,10 @@ export const usePatient = () => {
       });
       setCases((prev) => [created, ...prev]);
       return created;
-    } catch {
-      const mockCase: HealthcareCaseDto = {
-        id: `case-${Date.now()}`,
-        caseNumber: `CASE-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        patientId: selectedPatientId,
-        status: 'CREATED',
-        priority: 'MEDIUM',
-        intakeChannel: 'FORM',
-        chiefComplaint,
-        notes,
-      };
-      setCases((prev) => [mockCase, ...prev]);
-      return mockCase;
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to create clinical case in Core service';
+      setError(errMsg);
+      throw new Error(errMsg);
     }
   };
 

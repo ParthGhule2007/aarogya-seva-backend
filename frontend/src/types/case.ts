@@ -1,4 +1,5 @@
 import { SymptomSeverity } from './symptom';
+import { AiAssessmentSummaryDto, ReferralResponseDto } from './referral';
 
 export type CaseStatus =
   | 'CREATED'
@@ -20,6 +21,15 @@ export type IntakeChannel =
   | 'ASHA_WORKER'
   | 'FIELD_CLINIC';
 
+export interface VitalsDto {
+  temperatureFahrenheit?: number;
+  systolicBp?: number;
+  diastolicBp?: number;
+  pulseBpm?: number;
+  spo2Percent?: number;
+  respiratoryRate?: number;
+}
+
 export interface CaseSymptomDto {
   symptomName: string;
   severity: string;
@@ -40,6 +50,7 @@ export interface HealthcareCaseDto {
   notes?: string;
   latitude?: number | null;
   longitude?: number | null;
+  vitals?: VitalsDto;
   symptoms?: CaseSymptomDto[];
   createdAt?: string;
   updatedAt?: string;
@@ -62,6 +73,7 @@ export interface CreateCaseRequest {
   chiefComplaint?: string;
   initialChiefComplaint?: string;
   notes?: string;
+  vitals?: VitalsDto;
   initialSymptoms?: SymptomInputDto[];
 }
 
@@ -69,4 +81,10 @@ export interface UpdateCaseStatusRequest {
   status: CaseStatus;
   priority?: CasePriority;
   notes?: string;
+}
+
+export interface PatientMedicalRecordDto {
+  caseDetails: HealthcareCaseDto;
+  aiAssessment?: AiAssessmentSummaryDto;
+  referrals?: ReferralResponseDto[];
 }

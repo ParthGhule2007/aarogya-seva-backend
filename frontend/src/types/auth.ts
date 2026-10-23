@@ -1,4 +1,4 @@
-export type UserRole = 'PATIENT' | 'ASHA' | 'DOCTOR' | 'ADMIN' | 'CAREGIVER';
+export type UserRole = 'PATIENT' | 'ASHA' | 'DOCTOR' | 'ADMIN' | 'CAREGIVER' | 'FACILITY_ADMIN';
 
 export interface UserDto {
   id?: string;
@@ -60,5 +60,25 @@ export interface RegisterRequest {
   patientId?: string;
   doctorId?: string;
   facilityId?: string;
+}
+
+export interface ForgotPasswordRequest {
+  username: string;
+  phoneNumber?: string;
+  email?: string;
+  phoneOrEmail?: string;
+  newPassword: string;
+}
+
+export interface UpdateProfileRequest {
+  fullName?: string;
+  phoneNumber?: string;
+  email?: string;
+  villageTown?: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
 }
 

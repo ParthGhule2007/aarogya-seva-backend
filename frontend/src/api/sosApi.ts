@@ -68,4 +68,18 @@ export const sosApi = {
   deactivateDevice: async (token: string): Promise<void> => {
     return apiClient.delete<void>(`/api/v1/sos/devices/${encodeURIComponent(token)}`);
   },
+
+  /**
+   * Retrieve SOS events targeted at a specific healthcare facility.
+   */
+  getSosByFacility: async (facilityId: string): Promise<SosStatusResponse[]> => {
+    return apiClient.get<SosStatusResponse[]>(`/api/v1/sos/facility/${encodeURIComponent(facilityId)}`);
+  },
+
+  /**
+   * Retrieve SOS events triggered by a specific patient.
+   */
+  getSosByPatient: async (patientId: string): Promise<SosStatusResponse[]> => {
+    return apiClient.get<SosStatusResponse[]>(`/api/v1/sos/patient/${encodeURIComponent(patientId)}`);
+  },
 };

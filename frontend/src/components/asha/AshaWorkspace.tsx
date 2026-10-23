@@ -38,10 +38,13 @@ export const AshaWorkspace: React.FC = () => {
 
   // New patient form
   const [fullName, setFullName] = useState('');
+  const [age, setAge] = useState<number>(35);
   const [gender, setGender] = useState<'MALE' | 'FEMALE' | 'OTHER'>('FEMALE');
   const [contactNumber, setContactNumber] = useState('');
   const [village, setVillage] = useState('Palasdeo');
+  const [subDistrict, setSubDistrict] = useState('Indapur');
   const [district, setDistrict] = useState('Pune');
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -57,25 +60,38 @@ export const AshaWorkspace: React.FC = () => {
     e.preventDefault();
     if (!fullName || !contactNumber) return;
     setIsSubmitting(true);
+    setRegisterError(null);
+    const cleanPhone = contactNumber.replace(/[^0-9]/g, '');
+    const formattedPhone = cleanPhone.length === 10 ? `+91${cleanPhone}` : contactNumber.trim();
+    const birthYear = new Date().getFullYear() - (age > 0 ? age : 35);
     try {
       const req: CreatePatientRequest = {
-        fullName,
+        fullName: fullName.trim(),
+        age: age > 0 ? age : 35,
         gender,
-        dateOfBirth: '1985-05-15',
-        contactNumber,
+        dateOfBirth: `${birthYear}-05-15`,
+        contactNumber: formattedPhone,
+        villageTown: village.trim() || 'Palasdeo',
+        subDistrict: subDistrict.trim() || 'Indapur',
+        district: district.trim() || 'Pune',
+        state: 'Maharashtra',
+        pincode: '413132',
+        latitude: 18.2562,
+        longitude: 74.9048,
         address: {
-          village,
-          district,
+          village: village.trim() || 'Palasdeo',
+          subDistrict: subDistrict.trim() || 'Indapur',
+          district: district.trim() || 'Pune',
           state: 'Maharashtra',
           pincode: '413132',
           gpsLocation: {
-            latitude: 18.5204,
-            longitude: 73.8567,
+            latitude: 18.2562,
+            longitude: 74.9048,
           },
         },
         emergencyContact: {
           contactName: 'Local Caregiver',
-          contactNumber,
+          contactNumber: formattedPhone,
           relationship: 'Family',
         },
       };
@@ -85,8 +101,8 @@ export const AshaWorkspace: React.FC = () => {
       setIsRegisterModalOpen(false);
       setFullName('');
       setContactNumber('');
-    } catch {
-      // Error handled in hook
+    } catch (err: any) {
+      setRegisterError(err.message || 'Could not register villager. Please verify mobile number format.');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,6 +117,81 @@ export const AshaWorkspace: React.FC = () => {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+      {/* ASHA Field Health Hero Banner */}
+      <div className="hero-banner-modern" style={{ marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', position: 'relative', zIndex: 1 }}>
+          <div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
+              ASHA Community Health Worker Portal • आशा कार्यकर्ती पोर्टल
+            </div>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0.2rem 0' }}>
+              Village Health Register & Assisted Triage
+            </h2>
+            <div style={{ fontSize: '0.88rem', opacity: 0.92 }}>
+              Registered Villagers: <strong>{patients.length}</strong> • Active Field Case: <strong>{selectedPatientName || 'None Selected'}</strong>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn"
+              style={{ background: '#ffffff', color: '#0f766e', fontWeight: 800 }}
+              onClick={() => setIsRegisterModalOpen(true)}
+            >
+              <UserPlus size={18} />
+              <span>{t('ashaRegisterPatient')}</span>
+            </button>
+            <button
+              className="btn btn-danger"
+              style={{ fontWeight: 800 }}
+              onClick={() => setIsSosModalOpen(true)}
+            >
+              <AlertTriangle size={18} />
+              <span>Field Emergency SOS</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Village Health Overview Metrics Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.9rem', marginBottom: '1.25rem' }}>
+        <div className="stat-card-modern">
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Registered Villagers • नोंदणीकृत ग्रामस्थ
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)', margin: '0.2rem 0' }}>
+            {patients.length}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Synced with Core Health Registry
+          </div>
+        </div>
+
+        <div className="stat-card-modern">
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Villages Covered • समाविष्ट गावे
+          </div>
+          <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--secondary)', margin: '0.2rem 0' }}>
+            {Array.from(new Set(patients.map((p) => p.address?.village || p.village || p.villageTown || 'Palasdeo'))).length || 1}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Location-aware rural outreach
+          </div>
+        </div>
+
+        <div className="stat-card-modern">
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+            Selected Villager • निवडलेला रुग्ण
+          </div>
+          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: selectedPatientId ? '#15803d' : '#b45309', margin: '0.45rem 0' }}>
+            {selectedPatientName || 'Select Villager Below'}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            {selectedPatientId ? 'Ready for assisted screening' : 'Required before screening'}
+          </div>
+        </div>
+      </div>
+
       {/* Active Selected Patient Banner (Mandatory Boundary) */}
       <div
         style={{
@@ -346,6 +437,12 @@ export const AshaWorkspace: React.FC = () => {
             </div>
             <form onSubmit={handleRegisterSubmit}>
               <div className="modal-body">
+                {registerError && (
+                  <div className="alert-box danger" style={{ marginBottom: '1rem' }}>
+                    <AlertTriangle size={18} />
+                    <span>{registerError}</span>
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Full Name (पूरा नाम): *</label>
                   <input
@@ -358,17 +455,31 @@ export const AshaWorkspace: React.FC = () => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Gender (लिंग): *</label>
-                  <select
-                    className="form-control"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value as any)}
-                  >
-                    <option value="FEMALE">Female (महिला)</option>
-                    <option value="MALE">Male (पुरुष)</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Age (वय): *</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      className="form-control"
+                      value={age}
+                      onChange={(e) => setAge(Number(e.target.value))}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Gender (लिंग): *</label>
+                    <select
+                      className="form-control"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as any)}
+                    >
+                      <option value="FEMALE">Female (महिला)</option>
+                      <option value="MALE">Male (पुरुष)</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -383,7 +494,7 @@ export const AshaWorkspace: React.FC = () => {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                   <div className="form-group">
                     <label className="form-label">Village (गाँव):</label>
                     <input
@@ -391,6 +502,16 @@ export const AshaWorkspace: React.FC = () => {
                       className="form-control"
                       value={village}
                       onChange={(e) => setVillage(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Taluka / Sub-District:</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={subDistrict}
+                      onChange={(e) => setSubDistrict(e.target.value)}
                     />
                   </div>
 

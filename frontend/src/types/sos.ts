@@ -34,6 +34,11 @@ export interface SosResponse {
 
 export interface SosStatusResponse {
   sosId: string;
+  patientId?: string;
+  latitude?: number;
+  longitude?: number;
+  facilityId?: string | null;
+  message?: string | null;
   status: SosEventStatus;
   triggeredAt: string;
   resolvedAt?: string | null;

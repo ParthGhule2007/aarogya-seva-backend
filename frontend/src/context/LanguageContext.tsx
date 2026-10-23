@@ -4,6 +4,7 @@ import { hi } from '../locales/hi';
 import { mr } from '../locales/mr';
 
 export type SupportedLanguage = 'en' | 'hi' | 'mr';
+export type FontSizeScale = 'normal' | 'large' | 'xlarge';
 
 interface LanguageContextType {
   language: SupportedLanguage;
@@ -11,6 +12,9 @@ interface LanguageContextType {
   t: (key: TranslationKey, fallback?: string) => string;
   isHighContrast: boolean;
   toggleHighContrast: () => void;
+  fontSize: FontSizeScale;
+  setFontSize: (size: FontSizeScale) => void;
+  cycleFontSize: () => void;
 }
 
 const translations: Record<SupportedLanguage, Record<TranslationKey, string>> = {
@@ -40,6 +44,16 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   });
 
+  const [fontSize, setFontSizeState] = useState<FontSizeScale>(() => {
+    try {
+      const saved = localStorage.getItem('aarogya_font_size');
+      if (saved === 'normal' || saved === 'large' || saved === 'xlarge') return saved;
+    } catch {
+      // fallback
+    }
+    return 'normal';
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem('aarogya_lang', language);
@@ -61,12 +75,33 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, [isHighContrast]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('aarogya_font_size', fontSize);
+    } catch {
+      // ignore
+    }
+    document.documentElement.setAttribute('data-font-size', fontSize);
+  }, [fontSize]);
+
   const setLanguage = (lang: SupportedLanguage) => {
     setLanguageState(lang);
   };
 
   const toggleHighContrast = () => {
     setIsHighContrast((prev) => !prev);
+  };
+
+  const setFontSize = (size: FontSizeScale) => {
+    setFontSizeState(size);
+  };
+
+  const cycleFontSize = () => {
+    setFontSizeState((prev) => {
+      if (prev === 'normal') return 'large';
+      if (prev === 'large') return 'xlarge';
+      return 'normal';
+    });
   };
 
   const t = (key: TranslationKey, fallback?: string): string => {
@@ -85,6 +120,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         t,
         isHighContrast,
         toggleHighContrast,
+        fontSize,
+        setFontSize,
+        cycleFontSize,
       }}
     >
       {children}

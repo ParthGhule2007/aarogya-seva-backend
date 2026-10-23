@@ -72,12 +72,15 @@ export const EmergencySosModal: React.FC = () => {
     }
   }, [currentCoords]);
 
-  // Load caregivers
+  // Load caregivers (strictly filter by consentGiven && active)
   useEffect(() => {
     if (patientId) {
       caregiverApi
         .getCaregivers(patientId)
-        .then((data) => setCaregiverContacts(data || []))
+        .then((data) => {
+          const consented = (data || []).filter((c) => c.consentGiven !== false && c.active !== false);
+          setCaregiverContacts(consented);
+        })
         .catch(() => {});
     }
   }, [patientId]);
@@ -186,6 +189,14 @@ export const EmergencySosModal: React.FC = () => {
 
               <div style={{ fontSize: '0.9rem', color: '#166534', marginBottom: '0.75rem' }}>
                 Incident ID: <strong>{activeSos.sosId}</strong> • Dispatched: {new Date(activeSos.triggeredAt).toLocaleTimeString()}
+              </div>
+
+              <div style={{ fontSize: '0.85rem', color: '#166534', marginBottom: '0.75rem', background: '#dcfce7', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                <strong>Recipient Dispatch Summary:</strong> {activeSos.totalRecipients} total •{' '}
+                <span style={{ color: '#15803d', fontWeight: 700 }}>{activeSos.successfulNotifications} sent</span>
+                {activeSos.failedNotifications > 0 && (
+                  <span style={{ color: '#b91c1c', fontWeight: 700 }}> • {activeSos.failedNotifications} failed</span>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>

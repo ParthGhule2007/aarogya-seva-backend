@@ -25,45 +25,25 @@ import {
 } from 'lucide-react';
 import { ConsultationRequestDTO } from '../../types/consultation';
 import { AarogyaMitraVoiceCallCard } from '../calling/AarogyaMitraVoiceCallCard';
+import { PatientConsultationsList } from './PatientConsultationsList';
+import { RequestConsultationModal } from './RequestConsultationModal';
+import { PatientMedicalRecords } from './PatientMedicalRecords';
+import { FileText, MapPin, Droplet, Phone, TrendingUp, Sparkles } from 'lucide-react';
+import { VitalsGridDisplay } from '../common/medical/VitalCard';
+import { StatusBadge } from '../common/medical/StatusBadge';
+import { SymptomChip } from '../common/medical/SymptomChip';
+import { MobileBottomNav } from '../common/MobileBottomNav';
 
 export const PatientWorkspace: React.FC = () => {
   const { user, selectedPatientId } = useAuth();
   const { patient, cases } = usePatient();
-  const { consultations, bookConsultation, startConsultation } = useConsultation();
+  const { consultations, startConsultation } = useConsultation();
   const { availableDoctors } = useDoctor();
   const { t } = useLanguage();
   const { setIsSosModalOpen } = useSos();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'screening' | 'medicines' | 'consultations' | 'voiceCall'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'screening' | 'records' | 'medicines' | 'consultations' | 'voiceCall'>('overview');
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
-  const [selectedDoctorId, setSelectedDoctorId] = useState<number>(1);
-  const [consultationChiefComplaint, setConsultationChiefComplaint] = useState('');
-  const [isBooking, setIsBooking] = useState(false);
-
-  const handleBookConsultationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!consultationChiefComplaint.trim()) return;
-    setIsBooking(true);
-    try {
-      const selectedDoc = availableDoctors.find((d) => (d.doctorId || d.id) === selectedDoctorId);
-      const req: ConsultationRequestDTO = {
-        userId: selectedPatientId || user?.patientId || 'b1000000-0000-0000-0000-000000000001',
-        username: user?.displayName || 'Patient',
-        doctorId: selectedDoctorId,
-        disease: consultationChiefComplaint,
-        urgency: 'MEDIUM',
-        consultationType: 'VIDEO',
-      };
-      await bookConsultation(req);
-      setIsBookModalOpen(false);
-      setConsultationChiefComplaint('');
-      setActiveTab('consultations');
-    } catch {
-      // Error handled in hook
-    } finally {
-      setIsBooking(false);
-    }
-  };
 
   return (
     <div>
@@ -83,6 +63,14 @@ export const PatientWorkspace: React.FC = () => {
         >
           <Heart size={18} />
           <span>{t('navCareFlow')}</span>
+        </button>
+
+        <button
+          className={`tab-btn ${activeTab === 'records' ? 'active' : ''}`}
+          onClick={() => setActiveTab('records')}
+        >
+          <FileText size={18} />
+          <span>Medical History (नोंदवही)</span>
         </button>
 
         <button
@@ -112,33 +100,43 @@ export const PatientWorkspace: React.FC = () => {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          {/* Welcome Health Card */}
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #0d9488 0%, #059669 100%)',
-              color: '#ffffff',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.75rem',
-              marginBottom: '1.5rem',
-              boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
+          {/* Premium Patient Health Hero Card */}
+          <div className="hero-banner-modern" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', position: 'relative', zIndex: 1 }}>
               <div>
-                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Welcome to Aarogya Seva</div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, margin: '0.25rem 0' }}>
-                  {user?.displayName || 'Ramesh Patil'}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.22rem 0.7rem', borderRadius: '9999px', backgroundColor: 'rgba(255,255,255,0.14)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+                  <Sparkles size={13} />
+                  <span>Rural Digital Health Pass • आरोग्य सेवा ओळखपत्र</span>
+                </div>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0.15rem 0 0.45rem 0', letterSpacing: '-0.02em' }}>
+                  {patient?.fullName || user?.displayName || 'Ramesh Patil'}
                 </h2>
-                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-                  Village: {patient?.address?.village || patient?.villageTown || 'Palasdeo'}, District: {patient?.address?.district || patient?.district || 'Pune'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.88rem', opacity: 0.95 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MapPin size={15} />
+                    {patient?.address?.village || patient?.villageTown || 'Palasdeo'}, {patient?.address?.district || patient?.district || 'Pune'}
+                  </span>
+                  {patient?.age && (
+                    <span>• {patient.age} yrs ({patient.gender})</span>
+                  )}
+                  {patient?.bloodGroup && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.1rem 0.55rem', borderRadius: '9999px', backgroundColor: 'rgba(239, 68, 68, 0.28)', border: '1px solid rgba(252, 165, 165, 0.5)', fontWeight: 800 }}>
+                      <Droplet size={13} /> {patient.bloodGroup}
+                    </span>
+                  )}
+                  {(patient?.contactNumber || user?.contactNumber) && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Phone size={14} /> {patient?.contactNumber || user?.contactNumber}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
                 <button
                   className="btn"
-                  style={{ background: '#ffffff', color: '#0d9488', fontWeight: 700 }}
+                  style={{ background: '#ffffff', color: '#0f766e', fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
                   onClick={() => setActiveTab('screening')}
                 >
                   <Heart size={18} />
@@ -148,9 +146,23 @@ export const PatientWorkspace: React.FC = () => {
                 <button
                   className="btn btn-outline"
                   style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.14)',
                     color: '#ffffff',
-                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    borderColor: 'rgba(255, 255, 255, 0.38)',
+                    fontWeight: 700,
+                  }}
+                  onClick={() => setActiveTab('records')}
+                >
+                  <FileText size={18} />
+                  <span>Medical History</span>
+                </button>
+
+                <button
+                  className="btn btn-outline"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+                    color: '#ffffff',
+                    borderColor: 'rgba(255, 255, 255, 0.38)',
                     fontWeight: 700,
                   }}
                   onClick={() => setActiveTab('voiceCall')}
@@ -161,7 +173,7 @@ export const PatientWorkspace: React.FC = () => {
 
                 <button
                   className="btn btn-danger"
-                  style={{ fontWeight: 800 }}
+                  style={{ fontWeight: 800, boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)' }}
                   onClick={() => setIsSosModalOpen(true)}
                 >
                   <AlertTriangle size={18} />
@@ -173,30 +185,125 @@ export const PatientWorkspace: React.FC = () => {
 
           {/* Quick Metrics Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="card" style={{ marginBottom: 0 }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Active Care Cases</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', margin: '0.25rem 0' }}>
+            <div className="stat-card-modern" onClick={() => setActiveTab('records')} style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Active Care Cases • रुग्ण प्रकरणे
+                </span>
+                <Activity size={18} color="var(--primary)" />
+              </div>
+              <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--primary)', margin: '0.3rem 0' }}>
                 {cases.length}
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Recorded with Core health service</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Recorded in longitudinal EHR
+              </div>
             </div>
 
-            <div className="card" style={{ marginBottom: 0 }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Telemedicine Calls</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--secondary)', margin: '0.25rem 0' }}>
+            <div className="stat-card-modern" onClick={() => setActiveTab('consultations')} style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Telemedicine Calls • डॉक्टर सल्ला
+                </span>
+                <Video size={18} color="var(--secondary)" />
+              </div>
+              <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--secondary)', margin: '0.3rem 0' }}>
                 {consultations.length}
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Doctor consultations scheduled</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Video / audio sessions scheduled
+              </div>
             </div>
 
-            <div className="card" style={{ marginBottom: 0 }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Available Doctors</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b', margin: '0.25rem 0' }}>
+            <div className="stat-card-modern" onClick={() => setIsBookModalOpen(true)} style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Available Doctors • उपलब्ध डॉक्टर
+                </span>
+                <Stethoscope size={18} color="#f59e0b" />
+              </div>
+              <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#d97706', margin: '0.3rem 0' }}>
                 {availableDoctors.length}
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Online for instant telemedicine</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Online for instant rural consultation
+              </div>
             </div>
           </div>
+
+          {/* Latest Recorded Vitals & Symptom Trends */}
+          {cases.length > 0 && (
+            <div className="card" style={{ marginBottom: '1.5rem' }}>
+              <div className="card-header">
+                <div className="card-title">
+                  <TrendingUp size={20} color="var(--primary)" />
+                  <span>Latest Vitals & Clinical Case Trend • ताजे शारीरिक मापदंड</span>
+                </div>
+                <StatusBadge status={cases[0].priority || cases[0].status} />
+              </div>
+
+              {cases[0].vitals ? (
+                <div style={{ marginBottom: '1rem' }}>
+                  <VitalsGridDisplay vitals={cases[0].vitals} />
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', marginBottom: '0.85rem' }}>
+                  Case <strong>{cases[0].caseNumber}</strong> recorded on{' '}
+                  {cases[0].createdAt ? new Date(cases[0].createdAt).toLocaleDateString() : 'Recently'}.
+                </div>
+              )}
+
+              {/* Recent Case Timeline & Symptom Chips */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '0.75rem',
+                  paddingTop: '0.75rem',
+                  borderTop: '1px solid var(--border-light)',
+                }}
+              >
+                {cases.slice(0, 3).map((c) => (
+                  <div
+                    key={c.id}
+                    style={{
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-light)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.86rem', color: 'var(--text-main)' }}>
+                        {c.caseNumber}
+                      </strong>
+                      <StatusBadge status={c.status} size="sm" />
+                    </div>
+                    {c.chiefComplaint && (
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        {c.chiefComplaint}
+                      </div>
+                    )}
+                    {c.symptoms && c.symptoms.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                        {c.symptoms.slice(0, 3).map((sym, i) => (
+                          <SymptomChip
+                            key={i}
+                            name={sym.symptomName}
+                            severity={sym.severity}
+                            durationDays={sym.durationDays}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Recent Consultation or Case Banner */}
           <div className="card">
@@ -231,8 +338,8 @@ export const PatientWorkspace: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="badge badge-routine">{consultations[0].status}</span>
-                  {(consultations[0].status === 'READY' || consultations[0].status === 'ACCEPTED' || consultations[0].status === 'IN_CALL') && (
+                  <StatusBadge status={consultations[0].status} pulse={consultations[0].status === 'READY' || consultations[0].status === 'IN_CALL'} />
+                  {(consultations[0].status === 'READY' || consultations[0].status === 'IN_CALL') && (
                     <button
                       className="btn btn-primary"
                       style={{ minHeight: '40px', fontSize: '0.85rem' }}
@@ -241,6 +348,11 @@ export const PatientWorkspace: React.FC = () => {
                       <Video size={16} />
                       <span>Join Call</span>
                     </button>
+                  )}
+                  {consultations[0].status === 'ACCEPTED' && (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontStyle: 'italic' }}>
+                      Doctor accepted. Waiting for doctor to launch call...
+                    </span>
                   )}
                 </div>
               </div>
@@ -251,69 +363,18 @@ export const PatientWorkspace: React.FC = () => {
 
       {/* TAB 2: 5-STEP CARE FLOW */}
       {activeTab === 'screening' && (
-        <ScreeningWizard onComplete={() => setActiveTab('overview')} />
+        <ScreeningWizard onComplete={() => setActiveTab('records')} />
       )}
+
+      {/* TAB: PERMANENT MEDICAL RECORDS */}
+      {activeTab === 'records' && <PatientMedicalRecords />}
 
       {/* TAB 3: MEDICINE CABINET */}
       {activeTab === 'medicines' && <MedicineCabinet />}
 
       {/* TAB 4: CONSULTATIONS */}
       {activeTab === 'consultations' && (
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>Telemedicine Consultations</h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-subtle)' }}>
-                Connect with verified MBBS doctors and specialists over encrypted WebRTC video.
-              </p>
-            </div>
-            <button className="btn btn-primary" onClick={() => setIsBookModalOpen(true)}>
-              <Plus size={18} />
-              <span>Book New Consultation</span>
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {consultations.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-                <Video size={36} color="var(--primary)" style={{ margin: '0 auto 0.75rem' }} />
-                <div style={{ fontWeight: 700 }}>No Telemedicine Consultations</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', marginTop: '0.25rem' }}>
-                  Book your first video call consultation with an available medical officer.
-                </div>
-              </div>
-            ) : (
-              consultations.map((c) => (
-                <div key={c.id} className="card" style={{ marginBottom: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>
-                        {c.disease}
-                      </div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)' }}>
-                        Consultation #{c.id} • Mode: {c.consultationType} • Urgency: {c.urgency}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span className="badge badge-routine">{c.status}</span>
-                      {(c.status === 'READY' || c.status === 'ACCEPTED' || c.status === 'IN_CALL') && (
-                        <button
-                          className="btn btn-primary"
-                          style={{ minHeight: '40px' }}
-                          onClick={() => startConsultation(c.id, user?.displayName, c.doctorName)}
-                        >
-                          <Video size={16} />
-                          <span>Join Video Consultation</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <PatientConsultationsList onFindDoctors={() => setIsBookModalOpen(true)} />
       )}
 
       {/* TAB 5: AI VOICE CALL (AAROGYA MITRA) */}
@@ -328,58 +389,17 @@ export const PatientWorkspace: React.FC = () => {
 
       {/* Book Consultation Modal */}
       {isBookModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsBookModalOpen(false)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontWeight: 700 }}>Book Telemedicine Consultation</h3>
-              <button className="icon-btn" onClick={() => setIsBookModalOpen(false)}>✕</button>
-            </div>
-            <form onSubmit={handleBookConsultationSubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Select Available Doctor: *</label>
-                  <select
-                    className="form-control"
-                    value={selectedDoctorId}
-                    onChange={(e) => setSelectedDoctorId(Number(e.target.value))}
-                  >
-                    {availableDoctors.length === 0 ? (
-                      <option value={1}>Dr. Ananya Sharma (General Medicine) - Online</option>
-                    ) : (
-                      availableDoctors.map((doc) => (
-                        <option key={doc.doctorId || doc.id} value={doc.doctorId || doc.id}>
-                          {doc.doctorName || doc.name} ({doc.specialization}) - OPD Fee: ₹{doc.consultationFee || 200}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Chief Complaint / Symptoms to Discuss: *</label>
-                  <textarea
-                    className="form-control"
-                    rows={3}
-                    placeholder="e.g. Persistent fever and body ache for 3 days"
-                    value={consultationChiefComplaint}
-                    onChange={(e) => setConsultationChiefComplaint(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setIsBookModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={isBooking || !consultationChiefComplaint.trim()}>
-                  {isBooking ? 'Requesting...' : 'Confirm & Request Consultation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <RequestConsultationModal
+          onClose={() => setIsBookModalOpen(false)}
+          onSuccess={() => {
+            setIsBookModalOpen(false);
+            setActiveTab('consultations');
+          }}
+        />
       )}
+
+      {/* Mobile Bottom Navigation Bar for Thumb Ease */}
+      <MobileBottomNav activeTab={activeTab} onTabChange={(tab) => setActiveTab(tab)} />
     </div>
   );
 };

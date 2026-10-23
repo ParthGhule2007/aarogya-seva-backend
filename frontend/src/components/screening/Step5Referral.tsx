@@ -16,6 +16,8 @@ import {
   RefreshCw,
   Home,
 } from 'lucide-react';
+import { ReferralTimeline } from '../common/medical/ReferralTimeline';
+import { StatusBadge } from '../common/medical/StatusBadge';
 
 interface Step5ReferralProps {
   caseId: string;
@@ -46,40 +48,32 @@ export const Step5Referral: React.FC<Step5ReferralProps> = ({
       const facId = facility.facilityId || facility.id || '';
       const urgency = (aiAnalysis?.urgency?.level || aiAnalysis?.urgencyLevel || 'ROUTINE') as any;
       try {
+        const reasonText = aiAnalysis?.explanation || 'Clinical triage care referral';
         const res = await referralApi.createReferral({
           caseId,
           patientId,
           facilityId: facId,
           urgencyLevel: urgency,
-          reason: aiAnalysis?.explanation || 'Clinical triage care referral',
+          reason: reasonText,
+          patientMessage: reasonText,
         });
         setReferral(res);
       } catch (err: any) {
-        // If referral already exists for case, try fetching
+        // If referral already exists for case, try fetching existing referral from database
         try {
           const list = await referralApi.getReferralsByCaseId(caseId);
           if (list && list.length > 0) {
             setReferral(list[0]);
           } else {
-            throw new Error('No existing referral found');
+            throw err;
           }
-        } catch {
-          // Resilient provisional referral token for offline rural care continuity
-          const provisionalRef: ReferralResponseDto = {
-            id: 'ref-prov-' + Date.now(),
-            referralToken: 'REF-MH-' + Math.floor(100000 + Math.random() * 900000),
-            qrCodePayload: `AAROGYA-REF:${caseId}:${facId}:${patientId}`,
-            caseId,
-            patientId,
-            facilityId: facId,
-            facilityName: facility.name || facility.facilityName || 'Primary Health Centre',
-            urgencyLevel: urgency,
-            status: 'PENDING',
-            requestedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-          };
-          setReferral(provisionalRef);
-          setError('Referral service offline: Generated provisional offline token for clinic registration.');
+        } catch (fetchErr: any) {
+          setReferral(null);
+          setError(
+            err?.message ||
+              fetchErr?.message ||
+              'Failed to create official referral token in backend database. Please verify connection and retry.'
+          );
         }
       } finally {
         setIsLoading(false);
@@ -166,31 +160,41 @@ export const Step5Referral: React.FC<Step5ReferralProps> = ({
           {/* Referral Metadata Dossier */}
           <div
             style={{
-              maxWidth: '480px',
+              maxWidth: '560px',
               margin: '1rem auto 0 auto',
               textAlign: 'left',
               background: '#ffffff',
-              padding: '1rem 1.25rem',
+              padding: '1.15rem 1.35rem',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.9rem',
               border: '1px solid var(--border-light)',
             }}
           >
-            <div style={{ marginBottom: '0.4rem' }}>
-              <strong>Patient:</strong> {patientName}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div>
+                <strong>Patient:</strong> {patientName}
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <StatusBadge status={referral.urgencyLevel || 'URGENT'} />
+                <StatusBadge status={referral.status || 'PENDING'} pulse />
+              </div>
             </div>
             <div style={{ marginBottom: '0.4rem' }}>
-              <strong>Referred Facility:</strong> {facility.facilityName}
+              <strong>Referred Facility:</strong> {facility.name || facility.facilityName || referral.facilityName}
             </div>
-            <div style={{ marginBottom: '0.4rem' }}>
-              <strong>Urgency Level:</strong> <span className="badge badge-urgent">{referral.urgencyLevel || 'URGENT'}</span>
-            </div>
-            <div style={{ marginBottom: '0.4rem' }}>
-              <strong>Status:</strong> <span className="badge badge-routine">{referral.status || 'PENDING'}</span>
-            </div>
-            <div>
+            <div style={{ marginBottom: '0.75rem' }}>
               <strong>Issued On:</strong> {new Date().toLocaleDateString()}
             </div>
+
+            <ReferralTimeline
+              status={referral.status}
+              requestedAt={referral.requestedAt}
+              respondedAt={referral.respondedAt}
+              acceptedAt={referral.acceptedAt}
+              arrivedAt={referral.arrivedAt}
+              completedAt={referral.completedAt}
+              compact
+            />
           </div>
         </div>
       )}

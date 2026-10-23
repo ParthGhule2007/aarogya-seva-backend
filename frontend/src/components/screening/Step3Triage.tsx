@@ -13,7 +13,12 @@ import {
   RefreshCw,
   Building2,
   ListChecks,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { RiskGauge } from '../common/medical/RiskGauge';
+import { StatusBadge } from '../common/medical/StatusBadge';
+import { useTextToSpeech } from '../../hooks/useTextToSpeech';
 
 interface Step3TriageProps {
   caseId: string;
@@ -31,8 +36,25 @@ export const Step3Triage: React.FC<Step3TriageProps> = ({
   onBack,
 }) => {
   const { language, t } = useLanguage();
+  const { speak, stop, isSpeaking, isSupported: isTtsSupported } = useTextToSpeech(language);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleReadAloud = () => {
+    if (isSpeaking) {
+      stop();
+      return;
+    }
+    let message = '';
+    if (language === 'hi') {
+      message = `स्वास्थ्य मूल्यांकन: स्थिति ${urgencyLevel === 'EMERGENCY' ? 'आपातकालीन' : urgencyLevel === 'URGENT' ? 'अति आवश्यक' : 'सामान्य'} है। जोखिम स्तर ${riskLevel} है। ${aiAnalysis?.explanation || ''}`;
+    } else if (language === 'mr') {
+      message = `आरोग्य मूल्यांकन: स्थिती ${urgencyLevel === 'EMERGENCY' ? 'तातडीची' : urgencyLevel === 'URGENT' ? 'अति आवश्यक' : 'नियमित'} आहे. जोखीम पातळी ${riskLevel} आहे. ${aiAnalysis?.explanation || ''}`;
+    } else {
+      message = `Clinical triage assessment: Status is ${urgencyLevel}. Risk level is ${riskLevel}. ${aiAnalysis?.explanation || ''}`;
+    }
+    speak(message, language);
+  };
 
   const runAnalysis = async () => {
     if (!caseId) return;
@@ -180,78 +202,137 @@ export const Step3Triage: React.FC<Step3TriageProps> = ({
       {/* Triage Results */}
       {aiAnalysis && !isLoading && (
         <div>
-          {/* Top Triage Banner */}
+          {/* Interactive Risk Gauge + Clinical Narrative Grid */}
           <div
             style={{
-              background:
-                urgencyLevel === 'EMERGENCY'
-                  ? 'var(--risk-critical-bg)'
-                  : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
-                  ? 'var(--risk-moderate-bg)'
-                  : 'var(--risk-low-bg)',
-              border: `2px solid ${
-                urgencyLevel === 'EMERGENCY'
-                  ? 'var(--risk-critical-border)'
-                  : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
-                  ? 'var(--risk-moderate-border)'
-                  : 'var(--risk-low-border)'
-              }`,
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.25rem',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '1.25rem',
               marginBottom: '1.5rem',
+              alignItems: 'stretch',
             }}
           >
+            <RiskGauge
+              riskScore={riskScore}
+              riskLevel={riskLevel}
+              urgencyLevel={urgencyLevel}
+              confidence={aiAnalysis.confidence ?? aiAnalysis.confidenceScore}
+            />
+
             <div
               style={{
+                background:
+                  urgencyLevel === 'EMERGENCY'
+                    ? 'var(--risk-critical-bg)'
+                    : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
+                    ? 'var(--risk-moderate-bg)'
+                    : 'var(--risk-low-bg)',
+                border: `2px solid ${
+                  urgencyLevel === 'EMERGENCY'
+                    ? 'var(--risk-critical-border)'
+                    : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
+                    ? 'var(--risk-moderate-border)'
+                    : 'var(--risk-low-border)'
+                }`,
+                borderRadius: 'var(--radius-lg)',
+                padding: '1.25rem',
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <ShieldAlert
-                  size={32}
-                  color={
-                    urgencyLevel === 'EMERGENCY'
-                      ? '#dc2626'
-                      : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
-                      ? '#d97706'
-                      : '#15803d'
-                  }
-                />
-                <div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    Triage Classification: {urgencyLevel}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <ShieldAlert
+                      size={30}
+                      color={
+                        urgencyLevel === 'EMERGENCY'
+                          ? '#dc2626'
+                          : urgencyLevel === 'URGENT' || urgencyLevel === 'PRIORITY'
+                          ? '#d97706'
+                          : '#15803d'
+                      }
+                    />
+                    <div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                        Triage Classification: {urgencyLevel}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', marginTop: '0.15rem' }}>
+                        Risk Level: <strong style={{ color: 'var(--text-main)' }}>{riskLevel}</strong> ({riskScore.toFixed(0)}/100)
+                        {aiAnalysis.modelVersion && (
+                          <span style={{ marginLeft: '0.4rem', fontSize: '0.78rem', opacity: 0.85 }}>
+                            • {aiAnalysis.modelVersion}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-subtle)', marginTop: '0.15rem' }}>
-                    Risk Level: <strong style={{ color: 'var(--text-main)' }}>{riskLevel}</strong> (Risk Score: {riskScore.toFixed(0)}/100)
-                    {aiAnalysis.modelVersion && (
-                      <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', opacity: 0.85 }}>
-                        • Engine: {aiAnalysis.modelVersion}
-                      </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {isTtsSupported && (
+                      <button
+                        type="button"
+                        onClick={handleReadAloud}
+                        className="btn btn-outline"
+                        style={{
+                          padding: '0.35rem 0.75rem',
+                          minHeight: '36px',
+                          borderRadius: '9999px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          backgroundColor: isSpeaking ? 'var(--primary-light)' : '#ffffff',
+                          borderColor: isSpeaking ? 'var(--primary)' : 'var(--border-medium)',
+                          color: isSpeaking ? 'var(--primary-hover)' : 'var(--text-main)',
+                        }}
+                        title="Listen to Advice (सलाह सुनें / सल्ला ऐका)"
+                      >
+                        {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                        <span>
+                          {isSpeaking
+                            ? language === 'hi'
+                              ? 'रोकें'
+                              : language === 'mr'
+                              ? 'थांबवा'
+                              : 'Stop'
+                            : language === 'hi'
+                            ? '🔊 सलाह सुनें'
+                            : language === 'mr'
+                            ? '🔊 सल्ला ऐका'
+                            : '🔊 Listen'}
+                        </span>
+                      </button>
                     )}
+                    <StatusBadge status={urgencyLevel} pulse={urgencyLevel === 'EMERGENCY' || urgencyLevel === 'URGENT'} />
                   </div>
                 </div>
-              </div>
-              <div>{getUrgencyBadge(urgencyLevel)}</div>
-            </div>
 
-            {aiAnalysis.explanation && (
-              <div
-                style={{
-                  marginTop: '0.85rem',
-                  fontSize: '0.95rem',
-                  color: 'var(--text-main)',
-                  borderTop: '1px solid rgba(0,0,0,0.1)',
-                  paddingTop: '0.65rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                <strong>Clinical Physician Narrative:</strong> {aiAnalysis.explanation}
+                {aiAnalysis.explanation && (
+                  <div
+                    style={{
+                      marginTop: '0.85rem',
+                      fontSize: '0.93rem',
+                      color: 'var(--text-main)',
+                      borderTop: '1px solid rgba(0,0,0,0.1)',
+                      paddingTop: '0.65rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <strong>Clinical Physician Narrative:</strong> {aiAnalysis.explanation}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Suspected Differential Diagnoses */}
@@ -270,33 +351,42 @@ export const Step3Triage: React.FC<Step3TriageProps> = ({
                 <Activity size={20} color="var(--primary)" />
                 <span>Suspected Differential Diagnoses (AI Stratification):</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {aiAnalysis.possibleDiseases.map((d, i) => {
                   const prob = d.probability <= 1.0 ? d.probability * 100 : d.probability;
                   return (
                     <div
                       key={i}
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
                         background: 'var(--bg-subtle)',
-                        padding: '0.7rem 1rem',
+                        padding: '0.75rem 1rem',
                         borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.95rem',
+                        border: '1px solid var(--border-light)',
                       }}
                     >
-                      <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                        {d.diseaseName || d.category}
-                      </span>
-                      <span
-                        style={{
-                          fontWeight: 800,
-                          color: prob >= 70 ? 'var(--primary-hover)' : 'var(--text-subtle)',
-                        }}
-                      >
-                        Probability: {prob.toFixed(0)}%
-                      </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', fontSize: '0.95rem' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                          {d.diseaseName || d.category}
+                        </span>
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            color: prob >= 70 ? 'var(--primary-hover)' : 'var(--text-subtle)',
+                          }}
+                        >
+                          {prob.toFixed(0)}% Match
+                        </span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '9999px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${Math.min(100, Math.max(8, prob))}%`,
+                            height: '100%',
+                            backgroundColor: prob >= 70 ? 'var(--primary)' : 'var(--secondary)',
+                            borderRadius: '9999px',
+                          }}
+                        />
+                      </div>
                     </div>
                   );
                 })}
