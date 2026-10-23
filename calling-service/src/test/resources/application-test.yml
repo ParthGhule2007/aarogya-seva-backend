@@ -1,0 +1,58 @@
+server:
+  port: -1
+
+spring:
+  application:
+    name: calling-service-test
+  datasource:
+    url: jdbc:h2:mem:calling_test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS calling
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+        default_schema: calling
+  flyway:
+    enabled: false
+
+calling:
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:mock_twilio_account_sid}
+    auth-token: ${TWILIO_AUTH_TOKEN:mock_twilio_auth_token}
+    phone-number: ${TWILIO_PHONE_NUMBER:+10000000000}
+    webhook-base-url: ${CALLING_WEBHOOK_BASE_URL:https://example.ngrok-free.dev}
+    mock-mode: ${TWILIO_MOCK_MODE:true}
+  ultravox:
+    api-key: ${ULTRAVOX_API_KEY:mock_ultravox_api_key}
+    api-url: ${ULTRAVOX_API_URL:https://api.ultravox.ai/api}
+    model: ultravox-v0.7
+    temperature: 0.3
+    voice:
+      en: 73527457-256b-4291-a36e-10128315db4b
+      hi: f90da51d-8133-4d19-aa0f-4ec99e14cb85
+      mr: 26b36187-9e6c-481c-90e3-a991baac0496
+    vad:
+      turn-endpoint-delay: 0.384s
+      minimum-turn-duration: 0.064s
+      minimum-interruption-duration: 0.096s
+      frame-activation-threshold: 0.3
+    mock-mode: true
+  hospital-search:
+    provider: ${HOSPITAL_SEARCH_PROVIDER:mock}
+    geoapify:
+      api-key: ${GEOAPIFY_API_KEY:}
+      api-url: https://api.geoapify.com/v2/places
+      categories: healthcare.hospital,healthcare.clinic_or_praxis
+      initial-radius-km: 10
+      expanded-radius-km: 25
+      min-results-to-expand: 2
+      limit: 5
+      timeout-ms: 5000
+    search-radius-km: 25
+    fallback-radius-km: 10
+    max-results: 5

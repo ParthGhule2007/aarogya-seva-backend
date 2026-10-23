@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_MOCK_LOCATION": "false",
+        "EXPO_PUBLIC_API_HOST": "https://api.aarogyaseva.org",
+        "EXPO_PUBLIC_CORE_URL": "https://api.aarogyaseva.org:8081",
+        "EXPO_PUBLIC_SOS_URL": "https://api.aarogyaseva.org:8082",
+        "EXPO_PUBLIC_CONSULTATION_URL": "https://api.aarogyaseva.org:8083",
+        "EXPO_PUBLIC_COMMUNICATION_URL": "https://api.aarogyaseva.org:8084",
+        "EXPO_PUBLIC_CHATBOT_URL": "https://api.aarogyaseva.org:8085",
+        "EXPO_PUBLIC_DOCTOR_URL": "https://api.aarogyaseva.org:8086",
+        "EXPO_PUBLIC_MEDICINE_URL": "https://api.aarogyaseva.org:8088",
+        "EXPO_PUBLIC_CALLING_URL": "https://api.aarogyaseva.org:8089",
+        "EXPO_PUBLIC_OAUTH_URL": "https://api.aarogyaseva.org:8087",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com"
+      }
+    },
+    "production": {}
+  },
+  "submit": {
+    "production": {}
+  }
+}

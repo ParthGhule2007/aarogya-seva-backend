@@ -1,0 +1,689 @@
+{
+  "info": {
+    "name": "Rural Healthcare Platform API (Port 8081)",
+    "description": "Comprehensive Postman test collection for Module 1 (Facilities & PostGIS Discovery), Module 2 (Patient & Healthcare Cases), and Module 3 (Symptom Intake & Management).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "facilityId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "caseNumber",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "symptomId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Module 1 - Healthcare Facilities",
+      "item": [
+        {
+          "name": "1.1 List All Facilities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0 && !pm.collectionVariables.get('facilityId')) {",
+                  "    pm.collectionVariables.set('facilityId', jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Create Healthcare Facility",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set('facilityId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mohanlalganj Community Health Centre\",\n  \"facilityType\": \"CHC\",\n  \"latitude\": 26.6811,\n  \"longitude\": 80.9984,\n  \"addressLine1\": \"Hospital Road\",\n  \"villageTown\": \"Mohanlalganj\",\n  \"subDistrict\": \"Mohanlalganj\",\n  \"district\": \"Lucknow\",\n  \"state\": \"Uttar Pradesh\",\n  \"pincode\": \"226301\",\n  \"contactNumber\": \"+91-522-298201\",\n  \"emergencyNumber\": \"108\",\n  \"isOperational\": true,\n  \"serviceCodes\": [\n    \"GENERAL_OPD\",\n    \"EMERGENCY\",\n    \"MATERNAL_HEALTH\",\n    \"DIAGNOSTIC_LAB\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Get Facility by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities/{{facilityId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities", "{{facilityId}}"]
+            }
+          }
+        },
+        {
+          "name": "1.4 PostGIS Nearby Facility Discovery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities/nearby?latitude=26.8467&longitude=80.9462&radiusKm=30&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "26.8467"
+                },
+                {
+                  "key": "longitude",
+                  "value": "80.9462"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "30"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.5 Nearby Facilities with Service Filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities/nearby?latitude=26.8467&longitude=80.9462&radiusKm=50&services=EMERGENCY,MATERNAL_HEALTH&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "26.8467"
+                },
+                {
+                  "key": "longitude",
+                  "value": "80.9462"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "50"
+                },
+                {
+                  "key": "services",
+                  "value": "EMERGENCY,MATERNAL_HEALTH"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.6 Update Facility Operational Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/facilities/{{facilityId}}/status?operational=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "facilities", "{{facilityId}}", "status"],
+              "query": [
+                {
+                  "key": "operational",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 2 - Patient Management",
+      "item": [
+        {
+          "name": "2.1 List All Patients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0 && !pm.collectionVariables.get('patientId')) {",
+                  "    pm.collectionVariables.set('patientId', jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Register New Patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set('patientId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Sunita Devi\",\n  \"gender\": \"FEMALE\",\n  \"age\": 32,\n  \"contactNumber\": \"+91-9876543220\",\n  \"emergencyContactName\": \"Ramesh Devi\",\n  \"emergencyContactNumber\": \"+91-9876543221\",\n  \"villageTown\": \"Mohanlalganj\",\n  \"subDistrict\": \"Mohanlalganj\",\n  \"district\": \"Lucknow\",\n  \"state\": \"Uttar Pradesh\",\n  \"pincode\": \"226301\",\n  \"bloodGroup\": \"B_POSITIVE\",\n  \"preferredLanguage\": \"Hindi\",\n  \"latitude\": 26.6811,\n  \"longitude\": 80.9984\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Patient Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients/{{patientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients", "{{patientId}}"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Search Patient by Phone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients/by-phone?contactNumber=%2B91-9876543220",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients", "by-phone"],
+              "query": [
+                {
+                  "key": "contactNumber",
+                  "value": "+91-9876543220"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Search Patients by Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients/search?name=Sunita",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients", "search"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Sunita"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 2 - Healthcare Cases",
+      "item": [
+        {
+          "name": "3.1 List All Cases",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0 && !pm.collectionVariables.get('caseId')) {",
+                  "    pm.collectionVariables.set('caseId', jsonData.data[0].id);",
+                  "    pm.collectionVariables.set('caseNumber', jsonData.data[0].caseNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Open Consultation Case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data) {",
+                  "    if (jsonData.data.id) pm.collectionVariables.set('caseId', jsonData.data.id);",
+                  "    if (jsonData.data.caseNumber) pm.collectionVariables.set('caseNumber', jsonData.data.caseNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"intakeChannel\": \"COMMUNITY_HEALTH_WORKER\",\n  \"chiefComplaint\": \"Fever, persistent cough, and fatigue\",\n  \"notes\": \"Screened by ASHA worker during village visit\",\n  \"latitude\": 26.6811,\n  \"longitude\": 80.9984\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Get Case Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.4 List Cases for Patient",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/patient/{{patientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "patient", "{{patientId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Advance Case Status (Pending Triage)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PENDING_TRIAGE\",\n  \"priority\": \"HIGH\",\n  \"notes\": \"Submitted for clinical triage\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 3 - Symptom Intake & Management",
+      "item": [
+        {
+          "name": "4.1 Record Single Symptom for Case",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set('symptomId', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symptomName\": \"High Grade Fever\",\n  \"severity\": \"SEVERE\",\n  \"durationDays\": 4,\n  \"description\": \"Continuous fever with evening chills\",\n  \"bodySite\": \"Whole Body\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/symptoms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "symptoms"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Record Multiple Symptoms in Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symptoms\": [\n    {\n      \"symptomName\": \"Dry Persistent Cough\",\n      \"severity\": \"MODERATE\",\n      \"durationDays\": 5,\n      \"description\": \"Aggravated when lying down\",\n      \"bodySite\": \"Chest\"\n    },\n    {\n      \"symptomName\": \"Severe Headache\",\n      \"severity\": \"SEVERE\",\n      \"durationDays\": 2,\n      \"description\": \"Throbbing frontal headache\",\n      \"bodySite\": \"Head\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/symptoms/batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "symptoms", "batch"]
+            }
+          }
+        },
+        {
+          "name": "4.3 List All Symptoms for Case",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/symptoms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "symptoms"]
+            }
+          }
+        },
+        {
+          "name": "4.4 Filter Symptoms by Severity (SEVERE)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/symptoms?severity=SEVERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "symptoms"],
+              "query": [
+                {
+                  "key": "severity",
+                  "value": "SEVERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.5 Get Symptom by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/symptoms/{{symptomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "symptoms", "{{symptomId}}"]
+            }
+          }
+        },
+        {
+          "name": "4.6 Update Symptom Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symptomName\": \"High Grade Fever with Rigors\",\n  \"severity\": \"CRITICAL\",\n  \"durationDays\": 5,\n  \"description\": \"Fever spiked to 103 F, patient feeling dizzy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/symptoms/{{symptomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "symptoms", "{{symptomId}}"]
+            }
+          }
+        },
+        {
+          "name": "4.7 Delete Symptom",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/symptoms/{{symptomId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "symptoms", "{{symptomId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation & Error Responses",
+      "item": [
+        {
+          "name": "5.1 Reject Duplicate Phone Registration (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Duplicate User\",\n  \"gender\": \"MALE\",\n  \"age\": 30,\n  \"contactNumber\": \"+91-9876543220\",\n  \"villageTown\": \"Rampur\",\n  \"subDistrict\": \"Mohanlalganj\",\n  \"district\": \"Lucknow\",\n  \"state\": \"Uttar Pradesh\",\n  \"pincode\": \"226301\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "patients"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Reject Symptom for Closed Case (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symptomName\": \"Cough\",\n  \"severity\": \"MILD\",\n  \"durationDays\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/symptoms",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "symptoms"]
+            }
+          }
+        },
+        {
+          "name": "5.3 Not Found Resource (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/symptoms/00000000-0000-0000-0000-000000000000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "symptoms", "00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 4 - AI Intelligence & Decision Support",
+      "item": [
+        {
+          "name": "5.1 Run AI Clinical Screening & Decision Support",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set(\"predictionId\", jsonData.data.id);",
+                  "    console.log(\"Saved predictionId:\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/ai-analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "ai-analysis"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Get Latest AI Screening Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/{{caseId}}/ai-analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "{{caseId}}", "ai-analysis"]
+            }
+          }
+        },
+        {
+          "name": "5.3 Error Case: AI Analysis for Non-Existent Case (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/cases/00000000-0000-0000-0000-000000000000/ai-analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "cases", "00000000-0000-0000-0000-000000000000", "ai-analysis"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

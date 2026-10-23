@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Aarogya Seva",
+    "slug": "aarogya-seva",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ruralhealthcare.aarogyaseva"
+    },
+    "android": {
+      "package": "com.ruralhealthcare.aarogyaseva",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F766E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Aarogya Seva requires your location to discover nearby health facilities and send GPS coordinates in an emergency SOS."
+        }
+      ],
+      "expo-asset",
+      "expo-font",
+      "@react-native-google-signin/google-signin",
+      "expo-secure-store",
+      "expo-status-bar"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0a2ee5a3-c1ee-459c-ac35-92a313306654"
+      }
+    }
+  }
+}

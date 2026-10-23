@@ -1,0 +1,99 @@
+server:
+  port: ${SERVER_PORT:8088}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: medicine-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_APP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?currentSchema=medicine}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.qhsqnztonhrmqlkthzhb}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        default_schema: medicine
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: medicine
+    default-schema: medicine
+    create-schemas: true
+    locations: classpath:db/migration
+
+# Medicine Reminder Configuration
+medicine:
+  missed-dose-threshold: ${MEDICINE_MISSED_DOSE_THRESHOLD:2}
+  reminder-grace-period-minutes: ${MEDICINE_GRACE_PERIOD_MINUTES:60}
+  scheduler:
+    enabled: ${MEDICINE_SCHEDULER_ENABLED:true}
+    rate-ms: ${MEDICINE_SCHEDULER_RATE_MS:60000} # check every 1 minute
+  storage:
+    provider: ${MEDICINE_STORAGE_PROVIDER:auto} # 's3', 'local', or 'auto'
+    s3:
+      bucket: ${AWS_S3_BUCKET:aarogya-medicine-images}
+      region: ${AWS_REGION:ap-south-1}
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+      presigned-expiry-minutes: ${AWS_S3_PRESIGNED_EXPIRY_MINUTES:120}
+    local:
+      directory: ${MEDICINE_LOCAL_STORAGE_DIR:./storage/medicine-images}
+  notification:
+    provider: ${MEDICINE_NOTIFICATION_PROVIDER:mock} # 'mock' or 'fcm'
+    email-provider: ${MEDICINE_EMAIL_PROVIDER:gmail} # 'mock' or 'gmail'
+  firebase:
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:firebase-admin.json}
+    project-id: ${FIREBASE_PROJECT_ID:aarogya-seva-e8f23}
+  ocr:
+    provider: ${MEDICINE_OCR_PROVIDER:ocrspace} # 'ocrspace', 'mock' or 'textract'
+  security:
+    require-gateway-token: ${MEDICINE_REQUIRE_GATEWAY_TOKEN:false}
+    gateway-token: ${MEDICINE_GATEWAY_TOKEN:}
+    require-authentication: ${MEDICINE_REQUIRE_AUTHENTICATION:false}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.ruralhealthcare.medicine: INFO
+    org.springframework.web: INFO
+    org.flywaydb: INFO

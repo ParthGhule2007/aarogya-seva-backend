@@ -1,0 +1,33 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: chatbot-service-test
+  datasource:
+    url: jdbc:h2:mem:chatbot_testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+ai:
+  base-url: http://localhost:8087
+  max-history-messages: 20
+  timeout-seconds: 5

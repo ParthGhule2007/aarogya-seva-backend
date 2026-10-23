@@ -1,0 +1,43 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: consultation-service
+  cloud:
+    openfeign:
+      httpclient:
+        hc5:
+          enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?currentSchema=consultation}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.qhsqnztonhrmqlkthzhb}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        default_schema: consultation
+
+doctor-service:
+  url: ${DOCTOR_SERVICE_URL:http://localhost:8086}
+
+communication-service:
+  url: ${COMMUNICATION_SERVICE_URL:http://localhost:8084}
+
+jitsi:
+  base-url: ${JITSI_BASE_URL:https://meet.jit.si}
+
+consultation:
+  scheduler:
+    fixed-delay-ms: ${CONSULTATION_SCHEDULER_DELAY_MS:30000}

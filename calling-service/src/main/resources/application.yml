@@ -1,0 +1,92 @@
+server:
+  port: ${SERVER_PORT:8089}
+  forward-headers-strategy: framework
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: calling-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?currentSchema=calling}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.qhsqnztonhrmqlkthzhb}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        default_schema: calling
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: calling
+    default-schema: calling
+    create-schemas: true
+    locations: classpath:db/migration
+
+calling:
+  public-base-url: ${CALLING_PUBLIC_BASE_URL:${CALLING_WEBHOOK_BASE_URL:https://tamper-daily-unfixable.ngrok-free.dev}}
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:your_twilio_account_sid}
+    auth-token: ${TWILIO_AUTH_TOKEN:your_twilio_auth_token}
+    phone-number: ${TWILIO_PHONE_NUMBER:+17856204033}
+    webhook-base-url: ${CALLING_WEBHOOK_BASE_URL:https://tamper-daily-unfixable.ngrok-free.dev}
+    verified-recipients: ${TWILIO_VERIFIED_RECIPIENTS:+918010381892}
+    mock-mode: ${TWILIO_MOCK_MODE:false}
+  ultravox:
+    api-key: ${ULTRAVOX_API_KEY:your_ultravox_api_key}
+    api-url: ${ULTRAVOX_API_URL:https://api.ultravox.ai/api}
+    model: ${ULTRAVOX_MODEL:ultravox-v0.7}
+    temperature: ${ULTRAVOX_TEMPERATURE:0.3}
+    voice:
+      en: ${ULTRAVOX_VOICE_EN:73527457-256b-4291-a36e-10128315db4b}
+      hi: ${ULTRAVOX_VOICE_HI:f90da51d-8133-4d19-aa0f-4ec99e14cb85}
+      mr: ${ULTRAVOX_VOICE_MR:26b36187-9e6c-481c-90e3-a991baac0496}
+    vad:
+      turn-endpoint-delay: ${ULTRAVOX_VAD_TURN_ENDPOINT_DELAY:0.384s}
+      minimum-turn-duration: ${ULTRAVOX_VAD_MIN_TURN_DURATION:0.064s}
+      minimum-interruption-duration: ${ULTRAVOX_VAD_MIN_INTERRUPTION_DURATION:0.096s}
+      frame-activation-threshold: ${ULTRAVOX_VAD_FRAME_ACTIVATION_THRESHOLD:0.3}
+    mock-mode: ${ULTRAVOX_MOCK_MODE:false}
+  hospital-search:
+    provider: ${HOSPITAL_SEARCH_PROVIDER:geoapify}
+    geoapify:
+      api-key: ${GEOAPIFY_API_KEY:your_geoapify_api_key}
+      api-url: ${GEOAPIFY_API_URL:https://api.geoapify.com/v2/places}
+      categories: ${GEOAPIFY_CATEGORIES:healthcare.hospital,healthcare.clinic_or_praxis}
+      initial-radius-km: ${GEOAPIFY_INITIAL_RADIUS_KM:10}
+      expanded-radius-km: ${GEOAPIFY_EXPANDED_RADIUS_KM:25}
+      min-results-to-expand: ${GEOAPIFY_MIN_RESULTS_TO_EXPAND:2}
+      limit: ${GEOAPIFY_LIMIT:5}
+      timeout-ms: ${GEOAPIFY_TIMEOUT_MS:8000}
+    nominatim-url: ${NOMINATIM_URL:https://nominatim.openstreetmap.org}
+    overpass-url: ${OVERPASS_URL:https://overpass-api.de/api/interpreter}
+    overpass-fallback-url: ${OVERPASS_FALLBACK_URL:https://lz4.overpass-api.de/api/interpreter}
+    search-radius-km: ${HOSPITAL_SEARCH_RADIUS_KM:25}
+    fallback-radius-km: ${HOSPITAL_FALLBACK_RADIUS_KM:10}
+    max-results: ${HOSPITAL_SEARCH_MAX_RESULTS:5}
+    timeout-ms: ${HOSPITAL_SEARCH_TIMEOUT_MS:10000}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.ruralhealthcare.calling: INFO
+    org.springframework.web: INFO
+    org.flywaydb: INFO

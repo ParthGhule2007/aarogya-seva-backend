@@ -1,0 +1,859 @@
+{
+	"info": {
+		"_postman_id": "aarogya-seva-microservices-suite",
+		"name": "Aarogya Seva Microservices Suite",
+		"description": "Comprehensive Postman test collection for all 7 Aarogya Seva microservices (Ports 8081 - 8087).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. OAuth Service (Port 8087)",
+			"item": [
+				{
+					"name": "POST Google Auth (OAuth Service)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"idToken\": \"mock-or-real-google-id-token\",\n  \"role\": \"PATIENT\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8087/api/v1/auth/google",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8087",
+							"path": ["api", "v1", "auth", "google"]
+						}
+					}
+				},
+				{
+					"name": "POST Chat Inference",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age\": 28,\n  \"message\": \"I have severe stomach pain and nausea since morning\",\n  \"conversationHistory\": []\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8087/api/v1/ai/chat",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8087",
+							"path": ["api", "v1", "ai", "chat"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Doctor Service (Port 8086)",
+			"item": [
+				{
+					"name": "POST Register Doctor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Dr. Ananya Rao\",\n  \"specialization\": \"General Physician\",\n  \"email\": \"dr.ananya@hospital.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"experienceYears\": 8,\n  \"consultationFee\": 500.0,\n  \"status\": \"ACTIVE\",\n  \"availabilityStatus\": \"AVAILABLE\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8086/api/doctors",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8086",
+							"path": ["api", "doctors"]
+						}
+					}
+				},
+				{
+					"name": "GET Available Doctors",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8086/api/doctors/available",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8086",
+							"path": ["api", "doctors", "available"]
+						}
+					}
+				},
+				{
+					"name": "GET All Doctors",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8086/api/doctors",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8086",
+							"path": ["api", "doctors"]
+						}
+					}
+				},
+				{
+					"name": "GET Doctor by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8086/api/doctors/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8086",
+							"path": ["api", "doctors", "1"]
+						}
+					}
+				},
+				{
+					"name": "PATCH Doctor Availability",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Requested-By",
+								"value": "Admin"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"availabilityStatus\": \"AVAILABLE\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8086/api/doctors/1/availability",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8086",
+							"path": ["api", "doctors", "1", "availability"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Communication Service (Port 8084)",
+			"item": [
+				{
+					"name": "POST Create Session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"consultationId\": 101,\n  \"userId\": \"patient-001\",\n  \"doctorId\": 1,\n  \"communicationType\": \"VIDEO\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8084/api/communications/sessions",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8084",
+							"path": ["api", "communications", "sessions"]
+						}
+					}
+				},
+				{
+					"name": "GET Session by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8084/api/communications/sessions/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8084",
+							"path": ["api", "communications", "sessions", "1"]
+						}
+					}
+				},
+				{
+					"name": "GET Session by Consultation ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8084/api/communications/sessions/consultation/101",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8084",
+							"path": ["api", "communications", "sessions", "consultation", "101"]
+						}
+					}
+				},
+				{
+					"name": "PUT Start Session",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:8084/api/communications/sessions/1/start",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8084",
+							"path": ["api", "communications", "sessions", "1", "start"]
+						}
+					}
+				},
+				{
+					"name": "PUT End Session",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:8084/api/communications/sessions/1/end",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8084",
+							"path": ["api", "communications", "sessions", "1", "end"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Consultation Service (Port 8083)",
+			"item": [
+				{
+					"name": "GET Available Doctors (via Doctor Service)",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8083/api/consultations/available-doctors",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations", "available-doctors"]
+						}
+					}
+				},
+				{
+					"name": "POST Create Consultation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"patient-001\",\n  \"username\": \"Ramesh Kumar\",\n  \"doctorId\": 1,\n  \"disease\": \"High fever and stomach pain\",\n  \"urgency\": \"HIGH\",\n  \"consultationType\": \"VIDEO\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8083/api/consultations",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations"]
+						}
+					}
+				},
+				{
+					"name": "GET Consultation by ID",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8083/api/consultations/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations", "1"]
+						}
+					}
+				},
+				{
+					"name": "GET User Consultations",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8083/api/consultations/user/patient-001",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations", "user", "patient-001"]
+						}
+					}
+				},
+				{
+					"name": "PUT Accept Consultation (Orchestrates BUSY & Jitsi URL)",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:8083/api/consultations/1/accept",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations", "1", "accept"]
+						}
+					}
+				},
+				{
+					"name": "PUT Complete Consultation (Releases Doctor to AVAILABLE)",
+					"request": {
+						"method": "PUT",
+						"url": {
+							"raw": "http://localhost:8083/api/consultations/1/complete",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8083",
+							"path": ["api", "consultations", "1", "complete"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Chatbot Service (Port 8085)",
+			"item": [
+				{
+					"name": "POST Create Conversation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.data && jsonData.data.conversationId) {",
+									"    pm.globals.set('conversationId', jsonData.data.conversationId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"patient-001\",\n  \"username\": \"Ramesh Kumar\",\n  \"age\": 28\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8085/api/v1/chat/conversations",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8085",
+							"path": ["api", "v1", "chat", "conversations"]
+						}
+					}
+				},
+				{
+					"name": "POST Send Message to AI",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"patient-001\",\n  \"message\": \"I am feeling acute chest pain and dizziness since evening\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8085/api/v1/chat/conversations/{{conversationId}}/messages",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8085",
+							"path": ["api", "v1", "chat", "conversations", "{{conversationId}}", "messages"]
+						}
+					}
+				},
+				{
+					"name": "GET Chat History",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8085/api/v1/chat/conversations/{{conversationId}}/messages",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8085",
+							"path": ["api", "v1", "chat", "conversations", "{{conversationId}}", "messages"]
+						}
+					}
+				},
+				{
+					"name": "GET User Conversations",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8085/api/v1/chat/conversations/user/patient-001",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8085",
+							"path": ["api", "v1", "chat", "conversations", "user", "patient-001"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. SOS Emergency Service (Port 8082)",
+			"item": [
+				{
+					"name": "POST Trigger Emergency SOS",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"11111111-1111-1111-1111-111111111111\",\n  \"latitude\": 18.5204,\n  \"longitude\": 73.8567,\n  \"targets\": [\"CAREGIVER\", \"NEARBY_PEOPLE\"],\n  \"message\": \"Urgent: Severe chest pain and shortness of breath\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8082/api/v1/sos",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8082",
+							"path": ["api", "v1", "sos"]
+						}
+					}
+				},
+				{
+					"name": "GET SOS Alert Status Tracker",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8082/api/v1/sos/{{sosId}}",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8082",
+							"path": ["api", "v1", "sos", "{{sosId}}"]
+						}
+					}
+				},
+				{
+					"name": "POST Resolve SOS Alert",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8082/api/v1/sos/{{sosId}}/resolve",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8082",
+							"path": ["api", "v1", "sos", "{{sosId}}", "resolve"]
+						}
+					}
+				},
+				{
+					"name": "POST Register FCM Device Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"11111111-1111-1111-1111-111111111111\",\n  \"deviceToken\": \"fcm-sample-token-for-testing\",\n  \"platform\": \"ANDROID\",\n  \"userType\": \"PATIENT\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8082/api/v1/devices/register",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8082",
+							"path": ["api", "v1", "devices", "register"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Core & Auth Service (Port 8081)",
+			"item": [
+				{
+					"name": "POST Login - Patient (Ramesh)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"patient.ramesh\",\n  \"password\": \"Password@123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8081/api/v1/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "POST Login - Caregiver (Suresh)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"caregiver.suresh\",\n  \"password\": \"Password@123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8081/api/v1/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "POST Login - Doctor (Dr. Ananya)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"doctor.ananya\",\n  \"password\": \"Password@123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8081/api/v1/auth/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "POST Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"new.patient\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Santosh Kumar\",\n  \"phoneNumber\": \"9812345678\",\n  \"email\": \"santosh@example.com\",\n  \"role\": \"PATIENT\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8081/api/v1/auth/register",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api", "v1", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "GET Current User Profile (/me)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8081/api/v1/auth/me",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api", "v1", "auth", "me"]
+						}
+					}
+				},
+				{
+					"name": "GET API Docs",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "http://localhost:8081/api-docs",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8081",
+							"path": ["api-docs"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "8. Medicine & Caregiver Service (Port 8088)",
+			"item": [
+				{
+					"name": "POST Register Caregiver",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"11111111-1111-1111-1111-111111111111\",\n  \"name\": \"Suresh Patil\",\n  \"relationship\": \"Son\",\n  \"phoneNumber\": \"9876543211\",\n  \"email\": \"suresh.patil@ruralhealth.org\",\n  \"preferredChannel\": \"WHATSAPP\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8088/api/v1/caregivers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "caregivers"]
+						}
+					}
+				},
+				{
+					"name": "GET Caregivers for Patient",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8088/api/v1/caregivers/patient/11111111-1111-1111-1111-111111111111",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "caregivers", "patient", "11111111-1111-1111-1111-111111111111"]
+						}
+					}
+				},
+				{
+					"name": "GET Caregiver Escalations Log",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8088/api/v1/caregivers/escalations/patient/11111111-1111-1111-1111-111111111111",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "caregivers", "escalations", "patient", "11111111-1111-1111-1111-111111111111"]
+						}
+					}
+				},
+				{
+					"name": "POST Create Medicine Reminder (JSON)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"patientId\": \"11111111-1111-1111-1111-111111111111\",\n  \"medicineName\": \"Metformin 500mg\",\n  \"dosage\": \"1 Tablet\",\n  \"frequency\": \"TWICE_DAILY\",\n  \"instructions\": \"AFTER_FOOD\",\n  \"reminderTimes\": [\"08:00\", \"20:00\"],\n  \"startDate\": \"2026-10-18\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8088/api/v1/medications",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "medications"]
+						}
+					}
+				},
+				{
+					"name": "GET Today's Scheduled Doses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8088/api/v1/medications/today/11111111-1111-1111-1111-111111111111",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "medications", "today", "11111111-1111-1111-1111-111111111111"]
+						}
+					}
+				},
+				{
+					"name": "POST Mark Dose TAKEN",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8088/api/v1/medication-events/{{doseEventId}}/taken",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "medication-events", "{{doseEventId}}", "taken"]
+						}
+					}
+				},
+				{
+					"name": "POST Mark Dose SKIPPED",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "11111111-1111-1111-1111-111111111111"
+							},
+							{
+								"key": "X-User-Role",
+								"value": "PATIENT"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8088/api/v1/medication-events/{{doseEventId}}/skip",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8088",
+							"path": ["api", "v1", "medication-events", "{{doseEventId}}", "skip"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

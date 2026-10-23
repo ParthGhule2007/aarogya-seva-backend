@@ -1,0 +1,45 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: chatbot-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?currentSchema=chatbot}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.qhsqnztonhrmqlkthzhb}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        default_schema: chatbot
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: chatbot
+    default-schema: chatbot
+    create-schemas: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+# External AI Model Service Configuration
+ai:
+  base-url: ${AI_BASE_URL:https://parthgule-arogya-seva.hf.space}
+  max-history-messages: 20
+  timeout-seconds: 45
+  mock-mode: ${AI_MOCK_MODE:false}

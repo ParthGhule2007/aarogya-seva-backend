@@ -1,0 +1,85 @@
+server:
+  port: ${SERVER_PORT:8082}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  application:
+    name: sos-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-0-ap-south-1.pooler.supabase.com:5432/postgres?currentSchema=sos}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres.qhsqnztonhrmqlkthzhb}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 0
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# SOS Emergency Alert Configuration
+sos:
+  nearby-radius-km: 5.0
+  deduplication-window-seconds: 60
+  max-message-length: 500
+  notification:
+    provider: ${SOS_NOTIFICATION_PROVIDER:fcm} # 'mock' or 'fcm'
+  firebase:
+    project-id: ${FIREBASE_PROJECT_ID:aarogya-seva-e8f23}
+    client-email: ${FIREBASE_CLIENT_EMAIL:}
+    private-key: ${FIREBASE_PRIVATE_KEY:}
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:firebase-admin.json}
+  clients:
+    mode: ${SOS_CLIENTS_MODE:mock} # 'mock' or 'rest'
+    patient-service:
+      base-url: ${PATIENT_SERVICE_URL:http://localhost:8081}
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
+    facility-service:
+      base-url: ${FACILITY_SERVICE_URL:http://localhost:8081}
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
+    user-location-service:
+      base-url: ${USER_LOCATION_SERVICE_URL:http://localhost:8081}
+      connect-timeout-ms: 3000
+      read-timeout-ms: 5000
+
+# Firebase FCM Configuration (Used when provider is 'fcm')
+firebase:
+  project-id: ${FIREBASE_PROJECT_ID:aarogya-seva-e8f23}
+  client-email: ${FIREBASE_CLIENT_EMAIL:}
+  private-key: ${FIREBASE_PRIVATE_KEY:}
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:firebase-admin.json}
+
+# Actuator & Observability
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# SpringDoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

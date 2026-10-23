@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8087}
+
+spring:
+  application:
+    name: oauth-service
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+google:
+  web-client-id: ${GOOGLE_WEB_CLIENT_ID:}
+
+core:
+  base-url: ${CORE_BASE_URL:http://localhost:8081}
+
+internal:
+  service-key: ${INTERNAL_SERVICE_KEY:internal-service-secret-key-rural-healthcare}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
