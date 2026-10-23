@@ -24,4 +24,4 @@ EXPOSE 8087
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/oauth-service.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8087} -jar /app/oauth-service.jar"]

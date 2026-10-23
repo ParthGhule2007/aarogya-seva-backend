@@ -32,4 +32,4 @@ EXPOSE 8082
 # JVM configuration for containerized memory management
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/sos-service.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8082} -jar /app/sos-service.jar"]
