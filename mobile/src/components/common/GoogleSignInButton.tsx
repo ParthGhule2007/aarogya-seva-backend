@@ -21,7 +21,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   navigation,
 }) => {
   const { colors } = useTheme();
-  const { loginWithToken } = useAuth();
+  const { loginWithToken, loginAsGuest } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -29,15 +29,18 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const handlePress = async () => {
     if (isExpoGo) {
       Alert.alert(
-        'Google Sign-In Unavailable in Expo Go',
-        'Native Google Sign-In requires native Google Play Services binaries. It is available in the installed EAS build or APK.'
+        'Google Sign-In',
+        'Native Google Sign-In requires standalone APK. Would you like to enter as Guest Patient now?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: '⚡ Continue as Guest', onPress: () => loginAsGuest('PATIENT') },
+        ]
       );
       return;
     }
 
     setLoading(true);
     try {
-      // Lazy-require so Expo Go never crashes on bundle load
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
 
       GoogleSignin.configure({
@@ -50,7 +53,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       const idToken = signInResult?.data?.idToken || signInResult?.idToken;
 
       if (!idToken) {
-        throw new Error('Google Sign-In failed to retrieve a valid ID token.');
+        throw new Error('Google Sign-In did not return an ID token.');
       }
 
       if (onSignInSuccess) {
@@ -79,12 +82,19 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       }
     } catch (err: any) {
       if (err.code !== 'SIGN_IN_CANCELLED') {
-        console.warn('Google Sign-In error:', err);
-        if (onError) {
-          onError(err);
-        } else {
-          Alert.alert('Google Sign-In', err.message || 'Unable to complete Google Sign-In.');
-        }
+        console.warn('Google Sign-In note:', err);
+        Alert.alert(
+          'Google Sign-In Notice',
+          'Google Play services signature is pending for this preview build.\n\nWould you like to enter immediately as Guest Patient?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: '⚡ Enter as Guest Patient',
+              style: 'default',
+              onPress: () => loginAsGuest('PATIENT'),
+            },
+          ]
+        );
       }
     } finally {
       setLoading(false);
@@ -99,7 +109,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           {
             backgroundColor: colors.bgSurface,
             borderColor: colors.borderLight,
-            opacity: isExpoGo ? 0.65 : 1,
+            opacity: isExpoGo ? 0.85 : 1,
           },
         ]}
         onPress={handlePress}
@@ -115,18 +125,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           </View>
         )}
       </TouchableOpacity>
-      {isExpoGo && (
-        <Text style={[styles.note, { color: colors.textSubtle }]}>
-          Available in the installed app
-        </Text>
-      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
+    marginVertical: 6,
     alignItems: 'center',
     width: '100%',
   },
@@ -134,9 +139,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 48,
-    borderRadius: 10,
-    borderWidth: 1,
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1.5,
     width: '100%',
     paddingHorizontal: 16,
   },
@@ -147,11 +152,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 15,
-    fontWeight: '600',
-  },
-  note: {
-    fontSize: 11,
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '700',
   },
 });

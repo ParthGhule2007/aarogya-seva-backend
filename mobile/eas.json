@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_DEMO_MODE": "true",
         "EXPO_PUBLIC_MOCK_LOCATION": "false",
         "EXPO_PUBLIC_API_HOST": "https://aarogya-core-service.onrender.com",
         "EXPO_PUBLIC_CORE_URL": "https://aarogya-core-service.onrender.com",
@@ -34,7 +34,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_DEMO_MODE": "true",
         "EXPO_PUBLIC_MOCK_LOCATION": "false",
         "EXPO_PUBLIC_API_HOST": "https://aarogya-core-service.onrender.com",
         "EXPO_PUBLIC_CORE_URL": "https://aarogya-core-service.onrender.com",

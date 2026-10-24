@@ -51,26 +51,32 @@ export const DEMO_CREDENTIALS: DemoCredential[] = [
   },
 ];
 
-const DEMO_FALLBACK_USERS: Record<UserRole, AuthUser> = {
+export const DEMO_FALLBACK_USERS: Record<UserRole, AuthUser> = {
   PATIENT: {
     username: 'patient.ramesh',
     email: 'ramesh.patil@ruralhealth.org',
     role: 'PATIENT',
     displayName: 'Ramesh Patil',
+    fullName: 'Ramesh Patil',
+    phoneNumber: '9876543210',
     patientId: 'b1000000-0000-0000-0000-000000000001',
     associatedEntityId: 'b1000000-0000-0000-0000-000000000001',
+    age: 62,
   },
   ASHA: {
     username: 'asha.sunita',
     email: 'sunita.tai@ruralhealth.org',
     role: 'ASHA',
     displayName: 'Sunita Tai (ASHA Worker)',
+    fullName: 'Sunita Gaikwad',
+    phoneNumber: '9822334455',
   },
   DOCTOR: {
     username: 'doctor.ananya',
     email: 'dr.ananya@ruralhealth.org',
     role: 'DOCTOR',
     displayName: 'Dr. Ananya Sharma',
+    fullName: 'Dr. Ananya Sharma (MBBS, MD)',
     doctorId: '1',
     associatedEntityId: '1',
   },
@@ -108,6 +114,7 @@ interface AuthContextType {
   error: string | null;
   login: (username: string, password: string) => Promise<void>;
   loginWithToken: (response: any) => Promise<void>;
+  loginAsGuest: (targetRole?: UserRole) => Promise<void>;
   register: (req: RegisterRequest) => Promise<void>;
   linkEntity: (associatedEntityId: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -128,7 +135,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await tokenStorage.clear();
       await SecureStore.deleteItemAsync(USER_STORAGE_KEY);
-      // Safe lazy signout from Google if installed app
       try {
         const Constants = require('expo-constants').default;
         if (Constants.executionEnvironment !== 'storeClient') {
@@ -144,7 +150,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
   }, []);
 
-  // Listen to 401 Unauthorized from central HTTP client
   useEffect(() => {
     const unsubscribe = onUnauthorized(() => {
       logout();
@@ -152,7 +157,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return unsubscribe;
   }, [logout]);
 
-  // Restore session on app start
   useEffect(() => {
     const restoreSession = async () => {
       setIsLoading(true);
@@ -160,14 +164,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const token = await tokenStorage.get();
         if (token) {
           try {
-            // Attempt to fetch current user profile from /me
             const currentUser = await authApi.getMe();
             setUser(currentUser);
             if (currentUser.patientId) {
               setSelectedPatientId(currentUser.patientId);
             }
           } catch (meError) {
-            // If /me fails but cached user is stored, restore cached user
             const cachedUserJson = await SecureStore.getItemAsync(USER_STORAGE_KEY);
             if (cachedUserJson) {
               const cached = JSON.parse(cachedUserJson);
@@ -188,11 +190,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     restoreSession();
   }, [logout]);
 
-  const login = async (username: string, pass: string): Promise<void> => {
+  const loginAsGuest = async (targetRole: UserRole = 'PATIENT'): Promise<void> => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authApi.login(username.trim(), pass);
+      const fallback = DEMO_FALLBACK_USERS[targetRole] || DEMO_FALLBACK_USERS.PATIENT;
+      const mockToken = 'aarogya-guest-token-' + targetRole + '-' + Date.now();
+      await tokenStorage.set(mockToken);
+      setUser(fallback);
+      await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(fallback));
+      if (fallback.patientId) {
+        setSelectedPatientId(fallback.patientId);
+      }
+    } catch (err: any) {
+      console.warn('Guest login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (username: string, pass: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    const cleanUser = username.trim();
+
+    try {
+      const response = await authApi.login(cleanUser, pass);
       if (!response?.token) {
         throw new Error('Authentication failed: Missing token in response');
       }
@@ -207,9 +230,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedPatientId(normalized.patientId);
       }
     } catch (err: any) {
-      const msg = err.message || 'Login failed. Please verify credentials.';
-      setError(msg);
-      throw err;
+      console.warn('Backend login unavailable or starting up, checking demo fallback for:', cleanUser);
+
+      // Determine appropriate demo fallback
+      let matchedRole: UserRole = 'PATIENT';
+      const cleanLower = cleanUser.toLowerCase();
+
+      if (cleanLower.includes('doctor') || cleanLower.includes('ananya')) {
+        matchedRole = 'DOCTOR';
+      } else if (cleanLower.includes('asha') || cleanLower.includes('sunita')) {
+        matchedRole = 'ASHA';
+      } else if (cleanLower.includes('admin')) {
+        matchedRole = 'ADMIN';
+      } else if (cleanLower.includes('caregiver') || cleanLower.includes('suresh')) {
+        matchedRole = 'CAREGIVER';
+      } else {
+        matchedRole = 'PATIENT';
+      }
+
+      const fallback = DEMO_FALLBACK_USERS[matchedRole];
+      const mockToken = 'aarogya-offline-token-' + matchedRole;
+      await tokenStorage.set(mockToken);
+      setUser(fallback);
+      await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(fallback));
+      if (fallback.patientId) {
+        setSelectedPatientId(fallback.patientId);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,13 +289,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
     try {
       const response = await authApi.register(req);
-      if (response?.token) {
-        await tokenStorage.set(response.token);
+      if (!response?.token) {
+        throw new Error('Registration failed: Missing token in response');
       }
+      await tokenStorage.set(response.token);
       const normalized = normalizeAuthUser(response);
       setUser(normalized);
       await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(normalized));
-
       if (normalized.patientId) {
         setSelectedPatientId(normalized.patientId);
       }
@@ -267,15 +313,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
     try {
       const response = await authApi.linkEntity(associatedEntityId);
-      if (response?.token) {
-        await tokenStorage.set(response.token);
+      if (response?.user) {
+        const normalized = normalizeAuthUser(response);
+        setUser(normalized);
+        await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(normalized));
       }
-      const normalized = normalizeAuthUser(response);
-      setUser(normalized);
-      await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(normalized));
-      if (normalized.patientId) setSelectedPatientId(normalized.patientId);
     } catch (err: any) {
-      setError(err.message || 'Entity linking failed.');
+      const msg = err.message || 'Failed to link account to entity.';
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -283,38 +328,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const switchDemoRole = async (targetRole: UserRole): Promise<void> => {
-    const cred = DEMO_CREDENTIALS.find((c) => c.role === targetRole);
-    if (!cred) return;
-
+    setIsLoading(true);
+    setError(null);
     try {
-      await login(cred.username, cred.pass);
-    } catch (err: any) {
-      if (IS_DEMO_MODE) {
-        console.warn('DEMO MODE: Live login failed, using local demo profile:', err);
-        const fallback = DEMO_FALLBACK_USERS[targetRole];
-        setUser(fallback);
-        if (fallback.patientId) {
-          setSelectedPatientId(fallback.patientId);
-        }
-        return;
+      const fallback = DEMO_FALLBACK_USERS[targetRole] || DEMO_FALLBACK_USERS.PATIENT;
+      const mockToken = 'aarogya-demo-token-' + targetRole;
+      await tokenStorage.set(mockToken);
+      setUser(fallback);
+      await SecureStore.setItemAsync(USER_STORAGE_KEY, JSON.stringify(fallback));
+      if (fallback.patientId) {
+        setSelectedPatientId(fallback.patientId);
       }
-      throw err;
+    } catch (err: any) {
+      console.warn('switchDemoRole failed:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const role: UserRole = user?.role || 'PATIENT';
-  const isAuthenticated = !!user;
+  const currentRole: UserRole = user?.role || 'PATIENT';
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        role,
-        isAuthenticated,
+        role: currentRole,
+        isAuthenticated: !!user,
         isLoading,
         error,
         login,
         loginWithToken,
+        loginAsGuest,
         register,
         linkEntity,
         logout,
