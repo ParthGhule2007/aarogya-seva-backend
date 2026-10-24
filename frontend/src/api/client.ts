@@ -4,44 +4,59 @@ const env = ((import.meta as any).env || {}) as Record<string, string | undefine
 const BASE_URL = env.VITE_API_BASE_URL || '';
 const TOKEN_KEY = 'aarogya_jwt_token';
 
+// Production defaults (Render Cloud Microservices)
+const DEFAULT_CORE_URL = 'https://aarogya-core-service.onrender.com';
+const DEFAULT_DOC_URL = 'https://aarogya-doctor-service-e7gs.onrender.com';
+const DEFAULT_CONSULT_URL = 'https://aarogya-consultation-service-wksh.onrender.com';
+const DEFAULT_COMM_URL = 'https://aarogya-communication-service-25yt.onrender.com';
+const DEFAULT_SOS_URL = 'https://aarogya-sos-service-yjfs.onrender.com';
+const DEFAULT_CHAT_URL = 'https://aarogya-chatbot-service-s7ra.onrender.com';
+const DEFAULT_MED_URL = 'https://arogya-medicine-service.onrender.com';
+const DEFAULT_CALL_URL = 'https://aarogya-calling-service-ppbx.onrender.com';
+
 function resolveUrl(endpoint: string): string {
-  // In development (running with Vite dev server), always route using relative URLs
-  // so Vite's proxy in vite.config.ts forwards requests cleanly to localhost without CORS errors
-  if (import.meta.env.DEV) {
+  // In development, or when using reverse proxy rewrites (like Vercel rewrites), relative URLs forward cleanly
+  if (import.meta.env.DEV || env.VITE_USE_RELATIVE_URLS === 'true') {
     return endpoint;
   }
-  if (endpoint.startsWith('/api/doctors') && env.VITE_DOCTOR_SERVICE_URL) {
-    return `${env.VITE_DOCTOR_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (endpoint.startsWith('/api/doctors')) {
+    const base = env.VITE_DOCTOR_SERVICE_URL || DEFAULT_DOC_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
-  if (endpoint.startsWith('/api/consultations') && env.VITE_CONSULTATION_SERVICE_URL) {
-    return `${env.VITE_CONSULTATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (endpoint.startsWith('/api/consultations')) {
+    const base = env.VITE_CONSULTATION_SERVICE_URL || DEFAULT_CONSULT_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
-  if (endpoint.startsWith('/api/communications') && env.VITE_COMMUNICATION_SERVICE_URL) {
-    return `${env.VITE_COMMUNICATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (endpoint.startsWith('/api/communications')) {
+    const base = env.VITE_COMMUNICATION_SERVICE_URL || DEFAULT_COMM_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
-  if ((endpoint.startsWith('/api/v1/sos') || endpoint.startsWith('/api/v1/devices')) && env.VITE_SOS_SERVICE_URL) {
-    return `${env.VITE_SOS_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (endpoint.startsWith('/api/v1/sos') || endpoint.startsWith('/api/v1/devices')) {
+    const base = env.VITE_SOS_SERVICE_URL || DEFAULT_SOS_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
-  if (endpoint.startsWith('/api/v1/chat') && env.VITE_CHAT_SERVICE_URL) {
-    return `${env.VITE_CHAT_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
-  }
-  if (
-    (endpoint.startsWith('/api/v1/medications') ||
-      endpoint.startsWith('/api/v1/medication-events') ||
-      endpoint.startsWith('/api/v1/caregivers')) &&
-    env.VITE_MEDICATION_SERVICE_URL
-  ) {
-    return `${env.VITE_MEDICATION_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (endpoint.startsWith('/api/v1/chat')) {
+    const base = env.VITE_CHAT_SERVICE_URL || DEFAULT_CHAT_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
   if (
-    (endpoint.startsWith('/api/v1/calls') ||
-      endpoint.startsWith('/api/v1/follow-up') ||
-      endpoint.startsWith('/api/v1/tools')) &&
-    env.VITE_CALLING_SERVICE_URL
+    endpoint.startsWith('/api/v1/medications') ||
+    endpoint.startsWith('/api/v1/medication-events') ||
+    endpoint.startsWith('/api/v1/caregivers')
   ) {
-    return `${env.VITE_CALLING_SERVICE_URL.replace(/\/+$/, '')}${endpoint}`;
+    const base = env.VITE_MEDICATION_SERVICE_URL || DEFAULT_MED_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
   }
-  return `${BASE_URL.replace(/\/+$/, '')}${endpoint}`;
+  if (
+    endpoint.startsWith('/api/v1/calls') ||
+    endpoint.startsWith('/api/v1/follow-up') ||
+    endpoint.startsWith('/api/v1/tools')
+  ) {
+    const base = env.VITE_CALLING_SERVICE_URL || DEFAULT_CALL_URL;
+    return `${base.replace(/\/+$/, '')}${endpoint}`;
+  }
+  const base = BASE_URL || DEFAULT_CORE_URL;
+  return `${base.replace(/\/+$/, '')}${endpoint}`;
 }
 
 export class ApiError extends Error {

@@ -1,0 +1,61 @@
+{
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/api/v1/medications/:path*",
+      "destination": "https://arogya-medicine-service.onrender.com/api/v1/medications/:path*"
+    },
+    {
+      "source": "/api/v1/medication-events/:path*",
+      "destination": "https://arogya-medicine-service.onrender.com/api/v1/medication-events/:path*"
+    },
+    {
+      "source": "/api/v1/caregivers/:path*",
+      "destination": "https://arogya-medicine-service.onrender.com/api/v1/caregivers/:path*"
+    },
+    {
+      "source": "/api/v1/chat/:path*",
+      "destination": "https://aarogya-chatbot-service-s7ra.onrender.com/api/v1/chat/:path*"
+    },
+    {
+      "source": "/api/v1/sos/:path*",
+      "destination": "https://aarogya-sos-service-yjfs.onrender.com/api/v1/sos/:path*"
+    },
+    {
+      "source": "/api/v1/devices/:path*",
+      "destination": "https://aarogya-sos-service-yjfs.onrender.com/api/v1/devices/:path*"
+    },
+    {
+      "source": "/api/doctors/:path*",
+      "destination": "https://aarogya-doctor-service-e7gs.onrender.com/api/doctors/:path*"
+    },
+    {
+      "source": "/api/consultations/:path*",
+      "destination": "https://aarogya-consultation-service-wksh.onrender.com/api/consultations/:path*"
+    },
+    {
+      "source": "/api/communications/:path*",
+      "destination": "https://aarogya-communication-service-25yt.onrender.com/api/communications/:path*"
+    },
+    {
+      "source": "/api/v1/calls/:path*",
+      "destination": "https://aarogya-calling-service-ppbx.onrender.com/api/v1/calls/:path*"
+    },
+    {
+      "source": "/api/v1/follow-up/:path*",
+      "destination": "https://aarogya-calling-service-ppbx.onrender.com/api/v1/follow-up/:path*"
+    },
+    {
+      "source": "/api/v1/tools/:path*",
+      "destination": "https://aarogya-calling-service-ppbx.onrender.com/api/v1/tools/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://aarogya-core-service.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
