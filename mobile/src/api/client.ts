@@ -82,8 +82,8 @@ export async function request<T>(baseUrl: string, endpoint: string, options: Api
   }
   headers.set('Accept', 'application/json');
 
-  // Default 15-second AbortController timeout (configurable up to 45s for file/OCR uploads)
-  const timeoutMs = options.timeoutMs ?? 15000;
+  // Default 60-second AbortController timeout to gracefully accommodate Render free-tier cold starts
+  const timeoutMs = options.timeoutMs ?? 60000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 

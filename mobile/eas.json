@@ -26,10 +26,30 @@
         "EXPO_PUBLIC_CALLING_URL": "https://aarogya-calling-service-ppbx.onrender.com",
         "EXPO_PUBLIC_OAUTH_URL": "https://aarogya-oauth-service-1kvc.onrender.com",
         "EXPO_PUBLIC_FRONTEND_URL": "https://aarogya-seva-frontend.onrender.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "738825290071-2hudp01ira5hhb5iv0h5brttlagrcc7f.apps.googleusercontent.com"
       }
     },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DEMO_MODE": "false",
+        "EXPO_PUBLIC_MOCK_LOCATION": "false",
+        "EXPO_PUBLIC_API_HOST": "https://aarogya-core-service.onrender.com",
+        "EXPO_PUBLIC_CORE_URL": "https://aarogya-core-service.onrender.com",
+        "EXPO_PUBLIC_SOS_URL": "https://aarogya-sos-service-yjfs.onrender.com",
+        "EXPO_PUBLIC_CONSULTATION_URL": "https://aarogya-consultation-service-wksh.onrender.com",
+        "EXPO_PUBLIC_COMMUNICATION_URL": "https://aarogya-communication-service-25yt.onrender.com",
+        "EXPO_PUBLIC_CHATBOT_URL": "https://aarogya-chatbot-service-s7ra.onrender.com",
+        "EXPO_PUBLIC_DOCTOR_URL": "https://aarogya-doctor-service-e7gs.onrender.com",
+        "EXPO_PUBLIC_MEDICINE_URL": "https://arogya-medicine-service.onrender.com",
+        "EXPO_PUBLIC_CALLING_URL": "https://aarogya-calling-service-ppbx.onrender.com",
+        "EXPO_PUBLIC_OAUTH_URL": "https://aarogya-oauth-service-1kvc.onrender.com",
+        "EXPO_PUBLIC_FRONTEND_URL": "https://aarogya-seva-frontend.onrender.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "738825290071-2hudp01ira5hhb5iv0h5brttlagrcc7f.apps.googleusercontent.com"
+      }
+    }
   },
   "submit": {
     "production": {}
