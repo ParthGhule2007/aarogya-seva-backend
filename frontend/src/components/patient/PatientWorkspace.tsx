@@ -43,6 +43,17 @@ export const PatientWorkspace: React.FC = () => {
   const { setIsSosModalOpen } = useSos();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'screening' | 'records' | 'medicines' | 'consultations' | 'voiceCall'>('overview');
+
+  // Listen to Global Search Bar Navigation events
+  React.useEffect(() => {
+    const handleGlobalNav = (e: any) => {
+      if (e?.detail?.tab) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('aarogya:navigate', handleGlobalNav);
+    return () => window.removeEventListener('aarogya:navigate', handleGlobalNav);
+  }, []);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
 
   return (
