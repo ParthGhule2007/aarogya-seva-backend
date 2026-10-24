@@ -137,20 +137,23 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({
             key={step.index}
             role="listitem"
             style={{
-              padding: compact ? '0.5rem 0.65rem' : '0.65rem 0.8rem',
+              padding: compact ? '0.45rem 0.55rem' : '0.65rem 0.8rem',
               borderRadius: 'var(--radius-md)',
               backgroundColor: bg,
               border: `1.5px solid ${border}`,
               display: 'flex',
               alignItems: 'center',
-              gap: '0.55rem',
+              gap: compact ? '0.4rem' : '0.55rem',
               transition: 'all 0.2s ease',
+              minWidth: 0,
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           >
             <div
               style={{
-                width: compact ? '26px' : '30px',
-                height: compact ? '26px' : '30px',
+                width: compact ? '22px' : '28px',
+                height: compact ? '22px' : '28px',
                 borderRadius: '50%',
                 backgroundColor: isDone || isCurrent ? color : '#e2e8f0',
                 color: isDone || isCurrent ? '#ffffff' : '#64748b',
@@ -159,18 +162,19 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({
                 justifyContent: 'center',
                 flexShrink: 0,
                 fontWeight: 800,
-                fontSize: '0.75rem',
+                fontSize: compact ? '0.65rem' : '0.75rem',
               }}
             >
               {step.icon}
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
               <div
                 style={{
-                  fontSize: compact ? '0.75rem' : '0.8rem',
+                  fontSize: compact ? '0.72rem' : '0.8rem',
                   fontWeight: 800,
                   color: isDone || isCurrent ? 'var(--text-main)' : 'var(--text-muted)',
-                  whiteSpace: 'nowrap',
+                  lineHeight: 1.2,
+                  wordBreak: 'break-word',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}
@@ -178,7 +182,7 @@ export const ReferralTimeline: React.FC<ReferralTimelineProps> = ({
                 {step.title}
               </div>
               {!compact && (
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-subtle)', fontWeight: 600, lineHeight: 1.2, marginTop: '2px' }}>
                   {step.bilingual} • {step.time}
                 </div>
               )}

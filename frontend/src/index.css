@@ -957,13 +957,22 @@ a:focus-visible {
 /* Referral Timeline Progression */
 .referral-timeline-track {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
   position: relative;
   margin: 0.75rem 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 680px) {
+  .referral-timeline-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 380px) {
   .referral-timeline-track {
     grid-template-columns: 1fr;
   }

@@ -187,17 +187,17 @@ export const PatientMedicalRecords: React.FC = () => {
       {/* Records Timeline List */}
       {!isLoading && records.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {records.map((rec) => {
-            const caseObj = rec.caseDetails;
+          {records.map((rec, idx) => {
+            const caseObj = rec?.caseDetails || ({} as any);
             const vitals = caseObj?.vitals;
             const symptoms = caseObj?.symptoms || [];
-            const ai = rec.aiAssessment;
-            const referrals = rec.referrals || [];
-            const isExpanded = expandedCaseId === caseObj?.id;
+            const ai = rec?.aiAssessment;
+            const referrals = rec?.referrals || [];
+            const isExpanded = !!caseObj?.id && expandedCaseId === caseObj.id;
 
             return (
               <div
-                key={caseObj?.id}
+                key={caseObj?.id || `rec-${idx}`}
                 className="card"
                 style={{
                   marginBottom: 0,
@@ -209,7 +209,7 @@ export const PatientMedicalRecords: React.FC = () => {
               >
                 {/* Case Summary Bar (Clickable to toggle expand) */}
                 <div
-                  onClick={() => toggleExpand(caseObj.id)}
+                  onClick={() => caseObj?.id && toggleExpand(caseObj.id)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',

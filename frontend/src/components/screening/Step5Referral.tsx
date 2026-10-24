@@ -160,7 +160,8 @@ export const Step5Referral: React.FC<Step5ReferralProps> = ({
           {/* Referral Metadata Dossier */}
           <div
             style={{
-              maxWidth: '560px',
+              maxWidth: '680px',
+              width: '100%',
               margin: '1rem auto 0 auto',
               textAlign: 'left',
               background: '#ffffff',
@@ -168,6 +169,7 @@ export const Step5Referral: React.FC<Step5ReferralProps> = ({
               borderRadius: 'var(--radius-md)',
               fontSize: '0.9rem',
               border: '1px solid var(--border-light)',
+              boxSizing: 'border-box',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
