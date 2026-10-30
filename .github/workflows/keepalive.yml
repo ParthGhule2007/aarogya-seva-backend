@@ -1,0 +1,32 @@
+name: Render Microservices Keep-Alive Ping
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render 15-minute free tier spin-down
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping All Aarogya Seva Microservices
+        run: |
+          urls=(
+            "https://aarogya-core-service.onrender.com/health"
+            "https://aarogya-doctor-service-e7gs.onrender.com/health"
+            "https://aarogya-consultation-service-wksh.onrender.com/health"
+            "https://aarogya-communication-service-25yt.onrender.com/health"
+            "https://aarogya-chatbot-service-s7ra.onrender.com/health"
+            "https://arogya-medicine-service.onrender.com/health"
+            "https://aarogya-sos-service-yjfs.onrender.com/health"
+            "https://aarogya-calling-service-ppbx.onrender.com/health"
+            "https://aarogya-oauth-service-1kvc.onrender.com/health"
+            "https://parthgule-arogya-seva.hf.space/health"
+          )
+
+          for url in "${urls[@]}"; do
+            echo "Pinging $url..."
+            curl -s -m 20 "$url" || echo "Warning: timeout on $url"
+            echo ""
+          done

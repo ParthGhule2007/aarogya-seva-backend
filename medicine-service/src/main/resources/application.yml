@@ -97,3 +97,15 @@ logging:
     com.ruralhealthcare.medicine: INFO
     org.springframework.web: INFO
     org.flywaydb: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mail:
+      enabled: false
