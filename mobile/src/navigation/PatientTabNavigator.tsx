@@ -8,11 +8,13 @@ import { ConsultationsScreen } from '../screens/patient/ConsultationsScreen';
 import { TalkToAiScreen } from '../screens/patient/TalkToAiScreen';
 import { ChatbotScreen } from '../screens/patient/ChatbotScreen';
 import { FacilitiesScreen } from '../screens/patient/FacilitiesScreen';
+import { SymptomScreeningScreen } from '../screens/patient/SymptomScreeningScreen';
+import { MedicalRecordsScreen } from '../screens/patient/MedicalRecordsScreen';
 
 const Tab = createBottomTabNavigator();
 
 export const PatientTabNavigator: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isElderlyMode } = useTheme();
   const { t } = useLanguage();
 
   return (
@@ -22,14 +24,14 @@ export const PatientTabNavigator: React.FC = () => {
         tabBarStyle: {
           backgroundColor: colors.bgSurface,
           borderTopColor: colors.borderLight,
-          height: 60,
-          paddingBottom: 8,
+          height: isElderlyMode ? 68 : 60,
+          paddingBottom: isElderlyMode ? 10 : 8,
           paddingTop: 6,
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isElderlyMode ? 12 : 11,
           fontWeight: '700',
         },
       }}
@@ -38,9 +40,9 @@ export const PatientTabNavigator: React.FC = () => {
         name="Dashboard"
         component={PatientDashboardScreen}
         options={{
-          tabBarLabel: t('tabMeds'),
+          tabBarLabel: t('tabMeds') || 'Medicines',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="medkit" size={20} color={color} />
+            <Ionicons name="medkit" size={isElderlyMode ? 24 : 20} color={color} />
           ),
         }}
       />
@@ -48,9 +50,9 @@ export const PatientTabNavigator: React.FC = () => {
         name="Consultations"
         component={ConsultationsScreen}
         options={{
-          tabBarLabel: t('tabConsult'),
+          tabBarLabel: t('tabConsult') || 'Doctor Call',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="videocam" size={20} color={color} />
+            <Ionicons name="videocam" size={isElderlyMode ? 24 : 20} color={color} />
           ),
         }}
       />
@@ -58,9 +60,9 @@ export const PatientTabNavigator: React.FC = () => {
         name="TalkToAi"
         component={TalkToAiScreen}
         options={{
-          tabBarLabel: t('tabVoice'),
+          tabBarLabel: t('tabVoice') || 'Voice AI',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="call" size={20} color={color} />
+            <Ionicons name="call" size={isElderlyMode ? 24 : 20} color={color} />
           ),
         }}
       />
@@ -68,9 +70,9 @@ export const PatientTabNavigator: React.FC = () => {
         name="Chatbot"
         component={ChatbotScreen}
         options={{
-          tabBarLabel: t('tabChat'),
+          tabBarLabel: t('tabChat') || 'Chatbot',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-ellipses" size={20} color={color} />
+            <Ionicons name="chatbubble-ellipses" size={isElderlyMode ? 24 : 20} color={color} />
           ),
         }}
       />
@@ -78,10 +80,28 @@ export const PatientTabNavigator: React.FC = () => {
         name="Facilities"
         component={FacilitiesScreen}
         options={{
-          tabBarLabel: t('tabHospitals'),
+          tabBarLabel: t('tabHospitals') || 'Hospitals',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="business" size={20} color={color} />
+            <Ionicons name="business" size={isElderlyMode ? 24 : 20} color={color} />
           ),
+        }}
+      />
+
+      {/* Deep-linkable clinical screens accessible via OmniSearch & quick action cards */}
+      <Tab.Screen
+        name="Triage"
+        component={SymptomScreeningScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarLabel: 'Symptom Triage',
+        }}
+      />
+      <Tab.Screen
+        name="Records"
+        component={MedicalRecordsScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarLabel: 'Health Records',
         }}
       />
     </Tab.Navigator>

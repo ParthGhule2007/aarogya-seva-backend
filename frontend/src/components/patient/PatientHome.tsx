@@ -1,5 +1,6 @@
 import React from 'react';
-import { Stethoscope, ClipboardList, ShieldCheck, MapPin, Heart, ArrowRight, UserCheck, ShieldAlert } from 'lucide-react';
+import { Stethoscope, ClipboardList, ShieldCheck, MapPin, Heart, ArrowRight, UserCheck, ShieldAlert, Volume2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PatientHomeProps {
   onStartScreening: () => void;
@@ -14,6 +15,22 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
   onViewDoctors,
   onTriggerSos,
 }) => {
+  const { language, isElderlyMode } = useLanguage();
+
+  const handleSpeakGuidance = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const text =
+        language === 'hi'
+          ? 'नमस्ते! आरोग्य सेवा में आपका स्वागत है। आपातकालीन सहायता के लिए लाल बटन दबाएं, या डॉक्टर से जांच के लिए हरा बटन दबाएं।'
+          : language === 'mr'
+          ? 'नमस्ते! आरोग्य सेवेत आपले स्वागत आहे. तात्काळ मदतीसाठी लाल बटण दाबा, किंवा डॉक्टर सल्ल्यासाठी हिरवे बटण दाबा.'
+          : 'Welcome to Aarogya Seva. Press the red button for emergency ambulance, or the green button to start health screening.';
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === 'mr' ? 'mr-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'center' }}>
       {/* Welcome Banner */}
@@ -52,6 +69,20 @@ export const PatientHome: React.FC<PatientHomeProps> = ({
         <p style={{ fontSize: '1rem', color: 'var(--text-subtle)' }}>
           आपल्याला काय त्रास होत आहे ते सांगा. आम्ही आपल्याला योग्य दवाखाना आणि सल्ला मिळवून देऊ.
         </p>
+
+        {/* Voice Audio Guidance Bar for Seniors & Rural Users */}
+        <div style={{ marginTop: '1.25rem' }}>
+          <button
+            type="button"
+            className="senior-audio-btn"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={handleSpeakGuidance}
+            title="Listen to Spoken Instructions"
+          >
+            <Volume2 size={24} />
+            <span>🔊 {language === 'hi' ? 'आवाज़ में सहायता सुनें (Listen to Guide)' : 'बोलून मार्गदर्शन ऐका (Voice Guidance)'}</span>
+          </button>
+        </div>
 
         {/* Dedicated Emergency SOS Section */}
         <div

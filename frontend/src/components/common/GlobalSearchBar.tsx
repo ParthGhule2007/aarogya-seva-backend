@@ -17,10 +17,13 @@ import {
   ArrowRight,
   MapPin,
   HelpCircle,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSos } from '../../hooks/useSos';
 import { useLanguage } from '../../context/LanguageContext';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 export interface SearchItem {
   id: string;
@@ -43,12 +46,23 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
 }) => {
   const { role, switchDemoRole } = useAuth();
   const { setIsSosModalOpen } = useSos();
-  const { t } = useLanguage();
+  const { language, isElderlyMode, t } = useLanguage();
+  const { isListening, transcript, isSupported: isVoiceSupported, startListening, stopListening, resetTranscript } =
+    useSpeechRecognition(language);
 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<'ALL' | 'Nav' | 'Clinical' | 'Emergency' | 'Portal' | 'Symptom'>('ALL');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync voice transcript to search query
+  useEffect(() => {
+    if (transcript && isListening) {
+      setQuery(transcript.trim());
+      setSelectedIndex(0);
+    }
+  }, [transcript, isListening]);
 
   // Global hotkey: Ctrl+K or / opens the search palette
   useEffect(() => {
@@ -61,11 +75,12 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
         setIsOpen(true);
       } else if (e.key === 'Escape' && isOpen) {
         setIsOpen(false);
+        if (isListening) stopListening();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, isListening, stopListening]);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,12 +88,24 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       setSelectedIndex(0);
     } else {
       setQuery('');
+      if (isListening) stopListening();
+      resetTranscript();
     }
   }, [isOpen]);
 
   const dispatchNav = (tab: string) => {
     window.dispatchEvent(new CustomEvent('aarogya:navigate', { detail: { tab } }));
     setIsOpen(false);
+    if (isListening) stopListening();
+  };
+
+  const handleVoiceToggle = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      resetTranscript();
+      startListening();
+    }
   };
 
   const items: SearchItem[] = [
@@ -111,36 +138,36 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       id: 'nav-screening',
       title: 'Care Flow & AI Symptom Screening (लक्षण तपासणी)',
       subtitle: 'AI-assisted medical triage, urgency assessment & referral wizard',
-      category: 'Nav',
+      category: 'Clinical',
       icon: <Heart size={18} color="#e11d48" />,
       action: () => dispatchNav('screening'),
     },
     {
       id: 'nav-records',
       title: 'Medical History & Records (नोंदवही / अहवाल)',
-      subtitle: 'View historical doctor cases, diagnoses, prescriptions & lab reports',
+      subtitle: 'Vitals timeline, clinical history, diagnostic notes',
       category: 'Nav',
-      icon: <FileText size={18} color="#7c3aed" />,
+      icon: <FileText size={18} color="#d97706" />,
       action: () => dispatchNav('records'),
     },
     {
       id: 'nav-voice',
-      title: 'Aarogya Mitra Voice AI Call (आरोग्य मित्र कॉल)',
-      subtitle: 'Dial Indian-language voice AI assistant for medical queries',
-      category: 'Nav',
+      title: 'Aarogya Mitra Voice Call Helpline (आरोग्य मित्र कॉल)',
+      subtitle: 'Talk directly to clinical AI voice assistant in Marathi / Hindi',
+      category: 'Clinical',
       icon: <PhoneCall size={18} color="#0d9488" />,
       action: () => {
-        setIsOpen(false);
+        dispatchNav('voiceCall');
         if (onOpenVoiceCall) onOpenVoiceCall();
       },
     },
 
-    // Profile & Caregivers
+    // User Profile & Safety Actions
     {
       id: 'user-profile',
-      title: 'My Profile Details (वैयक्तिक माहिती)',
-      subtitle: 'View & edit full name, phone number, address, blood group',
-      category: 'Clinical',
+      title: 'My Profile & ABHA Identity (माझे प्रोफाईल)',
+      subtitle: 'Manage Ayushman Bharat Health Account (ABHA), demographic info',
+      category: 'Nav',
       icon: <User size={18} color="var(--primary)" />,
       action: () => {
         setIsOpen(false);
@@ -218,11 +245,11 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       },
     },
 
-    // Symptom shortcuts
+    // Common Rural Symptoms
     {
       id: 'sym-fever',
-      title: 'High Fever & Chills (ताप आणि थंडी)',
-      subtitle: 'Start symptom triage for acute fever and malaria/dengue screening',
+      title: 'Persistent High Fever (ताप / ताप येणे)',
+      subtitle: 'Start clinical symptom screening for febrile illness / dengue / malaria',
       category: 'Symptom',
       icon: <Sparkles size={18} color="#ea580c" />,
       action: () => {
@@ -230,11 +257,21 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       },
     },
     {
-      id: 'sym-cough',
-      title: 'Persistent Cough & Breathlessness (खोकला व श्वास लागणे)',
-      subtitle: 'Start respiratory evaluation and oxygen saturation check',
+      id: 'sym-breath',
+      title: 'Shortness of Breath (दम लागणे / धाप लागणे)',
+      subtitle: 'High urgency respiratory triage under Indian Public Health Standards (IPHS)',
       category: 'Symptom',
-      icon: <Sparkles size={18} color="#0891b2" />,
+      icon: <AlertTriangle size={18} color="#b91c1c" />,
+      action: () => {
+        dispatchNav('screening');
+      },
+    },
+    {
+      id: 'sym-vomiting',
+      title: 'Diarrhea & Vomiting (उलटी व जुलाब)',
+      subtitle: 'Dehydration risk assessment, ORS dosage & tele-consultation check',
+      category: 'Symptom',
+      icon: <Activity size={18} color="#059669" />,
       action: () => {
         dispatchNav('screening');
       },
@@ -252,6 +289,9 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
   ];
 
   const filteredItems = items.filter((item) => {
+    if (activeCategory !== 'ALL' && item.category !== activeCategory) {
+      return false;
+    }
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (
@@ -293,11 +333,30 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
         >
           <Search size={18} className="search-icon-muted" />
           <span className="search-placeholder-text">
-            Search sections, doctors, medicines, SOS, caregivers...
+            {language === 'hi'
+              ? 'यहाँ खोजें: दवाइयाँ, डॉक्टर, 108 SOS, लक्षण...'
+              : language === 'mr'
+              ? 'येथे शोधा: औषधे, डॉक्टर, 108 SOS, लक्षणे...'
+              : 'Search anything: medicines, doctors, 108 SOS, triage...'}
           </span>
-          <span className="search-hotkey-badge">
-            <kbd>Ctrl</kbd> <kbd>K</kbd>
-          </span>
+          <div className="search-hotkey-group">
+            {isVoiceSupported && (
+              <span
+                className="voice-quick-chip"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(true);
+                  setTimeout(() => handleVoiceToggle(), 150);
+                }}
+                title="Speak to Search (बोलकर खोजें)"
+              >
+                <Mic size={14} color="var(--primary)" />
+              </span>
+            )}
+            <span className="search-hotkey-badge">
+              <kbd>Ctrl</kbd> <kbd>K</kbd>
+            </span>
+          </div>
         </button>
       </div>
 
@@ -305,7 +364,10 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
       {isOpen && (
         <div
           className="cmd-palette-backdrop"
-          onClick={() => setIsOpen(false)}
+          onClick={() => {
+            setIsOpen(false);
+            if (isListening) stopListening();
+          }}
           role="dialog"
           aria-modal="true"
         >
@@ -320,7 +382,13 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
                 ref={inputRef}
                 type="text"
                 className="cmd-search-input"
-                placeholder="Type where you want to go or search symptoms..."
+                placeholder={
+                  language === 'hi'
+                    ? 'दवा, डॉक्टर, लक्षण या आपातकालीन सहायता खोजें...'
+                    : language === 'mr'
+                    ? 'औषध, डॉक्टर, लक्षणे किंवा आपत्कालीन मदत शोधा...'
+                    : 'Type where you want to go, or search symptoms...'
+                }
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -328,58 +396,91 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
                 }}
                 onKeyDown={handleKeyDownInput}
               />
+
+              {/* Voice Search Button */}
+              {isVoiceSupported && (
+                <button
+                  type="button"
+                  className={`cmd-mic-btn ${isListening ? 'listening' : ''}`}
+                  onClick={handleVoiceToggle}
+                  title={isListening ? 'Stop Listening' : 'Speak to search (बोलकर खोजें)'}
+                >
+                  {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+              )}
+
               {query ? (
                 <button
                   type="button"
                   className="cmd-clear-btn"
                   onClick={() => {
                     setQuery('');
+                    resetTranscript();
                     inputRef.current?.focus();
                   }}
                 >
                   <X size={18} />
                 </button>
               ) : (
-                <span className="cmd-esc-badge">ESC to close</span>
+                <span className="cmd-esc-badge">ESC</span>
               )}
             </div>
+
+            {/* Listening Indicator */}
+            {isListening && (
+              <div className="cmd-voice-banner">
+                <span className="voice-pulse-dot" />
+                <span>
+                  {language === 'hi'
+                    ? '🎙️ सुन रहे हैं... बोलिए (जैसे: बुखार, डॉक्टर कॉल, दवा)...'
+                    : '🎙️ Listening... Speak symptoms or doctor name in Hindi, Marathi, or English...'}
+                </span>
+              </div>
+            )}
 
             {/* Quick Action Category Pills */}
             <div className="cmd-chips-row">
               <button
                 type="button"
-                className="cmd-chip"
-                onClick={() => setQuery('medicines')}
+                className={`cmd-chip ${activeCategory === 'ALL' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('ALL')}
               >
-                💊 Medicines
+                🌟 All (सर्व)
               </button>
               <button
                 type="button"
-                className="cmd-chip"
-                onClick={() => setQuery('doctor')}
+                className={`cmd-chip ${activeCategory === 'Nav' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('Nav')}
               >
-                📹 Video Doctor
+                ⚡ Jump
               </button>
               <button
                 type="button"
-                className="cmd-chip"
-                onClick={() => setQuery('caregiver')}
+                className={`cmd-chip ${activeCategory === 'Clinical' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('Clinical')}
               >
-                👥 Caregivers
+                🩺 Triage & Care
               </button>
               <button
                 type="button"
-                className="cmd-chip"
-                onClick={() => setQuery('records')}
+                className={`cmd-chip ${activeCategory === 'Symptom' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('Symptom')}
               >
-                📋 Records
+                🤒 Symptoms
               </button>
               <button
                 type="button"
-                className="cmd-chip emergency"
-                onClick={() => setQuery('sos')}
+                className={`cmd-chip emergency ${activeCategory === 'Emergency' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('Emergency')}
               >
                 🚨 SOS 108
+              </button>
+              <button
+                type="button"
+                className={`cmd-chip ${activeCategory === 'Portal' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('Portal')}
+              >
+                🏥 Staff Portals
               </button>
             </div>
 
@@ -427,7 +528,7 @@ export const GlobalSearchBar: React.FC<GlobalSearchBarProps> = ({
                 <span><kbd>↵</kbd> to select</span>
                 <span><kbd>esc</kbd> to dismiss</span>
               </div>
-              <span className="cmd-footer-tag">Aarogya Seva Intelligence</span>
+              <span className="cmd-footer-tag">Aarogya Seva Clinical Intelligence</span>
             </div>
           </div>
         </div>

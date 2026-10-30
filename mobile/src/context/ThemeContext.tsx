@@ -1,22 +1,42 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { ThemeColors, lightColors } from '../theme/theme';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { ThemeColors, lightColors, darkColors } from '../theme/theme';
 
 interface ThemeContextType {
   isDark: boolean;
   colors: ThemeColors;
   toggleTheme: () => void;
+  isElderlyMode: boolean;
+  toggleElderlyMode: () => void;
+  fontScale: number;
+  touchTargetMin: number;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Light theme only per Phase 4 specification
-  const isDark = false;
-  const colors = lightColors;
-  const toggleTheme = () => {};
+  const [isDark, setIsDark] = useState(false);
+  const [isElderlyMode, setIsElderlyMode] = useState(false);
+
+  const colors = isDark ? darkColors : lightColors;
+
+  const toggleTheme = () => setIsDark((prev) => !prev);
+  const toggleElderlyMode = () => setIsElderlyMode((prev) => !prev);
+
+  const fontScale = isElderlyMode ? 1.25 : 1.0;
+  const touchTargetMin = isElderlyMode ? 62 : 44;
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{
+        isDark,
+        colors,
+        toggleTheme,
+        isElderlyMode,
+        toggleElderlyMode,
+        fontScale,
+        touchTargetMin,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

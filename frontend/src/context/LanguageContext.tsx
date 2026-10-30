@@ -15,6 +15,8 @@ interface LanguageContextType {
   fontSize: FontSizeScale;
   setFontSize: (size: FontSizeScale) => void;
   cycleFontSize: () => void;
+  isElderlyMode: boolean;
+  toggleElderlyMode: () => void;
 }
 
 const translations: Record<SupportedLanguage, Record<TranslationKey, string>> = {
@@ -54,6 +56,14 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     return 'normal';
   });
 
+  const [isElderlyMode, setIsElderlyMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('aarogya_elderly_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem('aarogya_lang', language);
@@ -84,12 +94,30 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.setAttribute('data-font-size', fontSize);
   }, [fontSize]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('aarogya_elderly_mode', String(isElderlyMode));
+    } catch {
+      // ignore
+    }
+    if (isElderlyMode) {
+      document.documentElement.setAttribute('data-elderly', 'true');
+      setFontSizeState('xlarge');
+    } else {
+      document.documentElement.removeAttribute('data-elderly');
+    }
+  }, [isElderlyMode]);
+
   const setLanguage = (lang: SupportedLanguage) => {
     setLanguageState(lang);
   };
 
   const toggleHighContrast = () => {
     setIsHighContrast((prev) => !prev);
+  };
+
+  const toggleElderlyMode = () => {
+    setIsElderlyMode((prev) => !prev);
   };
 
   const setFontSize = (size: FontSizeScale) => {
@@ -123,6 +151,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         fontSize,
         setFontSize,
         cycleFontSize,
+        isElderlyMode,
+        toggleElderlyMode,
       }}
     >
       {children}

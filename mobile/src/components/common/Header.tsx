@@ -3,21 +3,28 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal, Switch } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth, DEMO_CREDENTIALS } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage, SupportedLanguage } from '../../i18n/LanguageContext';
 import { useLocationSharing } from '../../context/LocationSharingContext';
 import { UserRole } from '../../types/auth';
+import { OmniSearchModal } from './OmniSearchModal';
+import { EmergencySosModal } from './EmergencySosModal';
 
 export const Header: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const { user, role, switchDemoRole, logout } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isElderlyMode, toggleElderlyMode, fontScale } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const { isSharingEnabled, setIsSharingEnabled } = useLocationSharing();
+
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showSosModal, setShowSosModal] = useState(false);
 
   const getRoleLabel = (r: UserRole): string => {
     switch (r) {
@@ -45,15 +52,39 @@ export const Header: React.FC = () => {
       <StatusBar style="dark" />
       {/* Brand & User info */}
       <View style={styles.brandRow}>
-        <View>
-          <Text style={[styles.brandTitle, { color: colors.primary }]}>{t('brandName')}</Text>
-          <Text style={[styles.brandSubtitle, { color: colors.textSubtle }]}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="medical" size={20} color={colors.primary} />
+            <Text style={[styles.brandTitle, { color: colors.primary, fontSize: (isElderlyMode ? 20 : 17) * fontScale }]}>
+              {t('brandName')}
+            </Text>
+          </View>
+          <Text style={[styles.brandSubtitle, { color: colors.textSubtle, fontSize: (isElderlyMode ? 13 : 11) * fontScale }]} numberOfLines={1}>
             {user?.displayName || t('brandSubtitle')}
           </Text>
         </View>
 
         {/* Action controls */}
         <View style={styles.controlsRow}>
+          {/* Senior Mode Toggle Button */}
+          <TouchableOpacity
+            style={[
+              styles.seniorToggleBtn,
+              {
+                backgroundColor: isElderlyMode ? '#FEF3C7' : colors.bgSubtle,
+                borderColor: isElderlyMode ? '#D97706' : colors.borderMedium,
+              },
+            ]}
+            onPress={toggleElderlyMode}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Elderly Mode"
+          >
+            <Text style={{ fontSize: 13 }}>👵</Text>
+            <Text style={[styles.seniorToggleText, { color: isElderlyMode ? '#92400E' : colors.textMuted }]}>
+              {isElderlyMode ? 'वृद्ध Mode ON' : 'वृद्ध'}
+            </Text>
+          </TouchableOpacity>
+
           {/* Language Switcher */}
           <TouchableOpacity
             style={[styles.chipButton, { backgroundColor: colors.bgSubtle, borderColor: colors.borderMedium }]}
@@ -97,6 +128,45 @@ export const Header: React.FC = () => {
         </View>
       </View>
 
+      {/* Prominent Universal OmniSearch Trigger Bar */}
+      <TouchableOpacity
+        onPress={() => setShowSearchModal(true)}
+        activeOpacity={0.8}
+        style={[
+          styles.omniSearchBar,
+          {
+            backgroundColor: colors.bgSubtle,
+            borderColor: colors.borderMedium,
+            height: isElderlyMode ? 52 : 44,
+          },
+        ]}
+      >
+        <Ionicons name="search" size={isElderlyMode ? 22 : 18} color={colors.primary} style={{ marginRight: 8 }} />
+        <Text style={[styles.omniSearchPlaceholder, { color: colors.textSubtle, fontSize: (isElderlyMode ? 15 : 13) * fontScale }]}>
+          {language === 'hi'
+            ? 'यहाँ खोजें: डॉक्टर, दवाइयाँ, 108 SOS, अस्पताल...'
+            : language === 'mr'
+            ? 'येथे शोधा: डॉक्टर, औषधे, 108 SOS, रुग्णालय...'
+            : 'Search anything: Doctors, medicines, 108 SOS, PHCs...'}
+        </Text>
+        <View style={[styles.micIndicator, { backgroundColor: colors.primaryLight }]}>
+          <Ionicons name="mic" size={15} color={colors.primary} />
+        </View>
+      </TouchableOpacity>
+
+      {/* Universal OmniSearch Modal */}
+      <OmniSearchModal
+        visible={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        navigation={navigation}
+        onOpenSos={() => setShowSosModal(true)}
+        onOpenTriage={() => navigation.navigate('Triage' as any)}
+        onOpenRecords={() => navigation.navigate('Records' as any)}
+      />
+
+      {/* Emergency SOS Modal */}
+      <EmergencySosModal visible={showSosModal} onClose={() => setShowSosModal(false)} />
+
       {/* Role Switcher Modal */}
       <Modal visible={showRoleModal} transparent animationType="fade" onRequestClose={() => setShowRoleModal(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowRoleModal(false)}>
@@ -112,24 +182,26 @@ export const Header: React.FC = () => {
                 style={[
                   styles.roleOption,
                   {
-                    backgroundColor: cred.role === role ? colors.primaryLight : colors.bgSubtle,
-                    borderColor: cred.role === role ? colors.primary : colors.borderLight,
+                    borderColor: role === cred.role ? colors.primary : colors.borderLight,
+                    backgroundColor: role === cred.role ? colors.primaryLight : colors.bgApp,
                   },
                 ]}
                 onPress={() => {
-                  setShowRoleModal(false);
                   switchDemoRole(cred.role);
+                  setShowRoleModal(false);
                 }}
               >
                 <View>
                   <Text style={[styles.roleOptionTitle, { color: colors.textMain }]}>
-                    {cred.label} ({cred.role})
+                    {getRoleLabel(cred.role)}
                   </Text>
                   <Text style={[styles.roleOptionSub, { color: colors.textSubtle }]}>
-                    {cred.sublabel} • @{cred.username}
+                    {cred.label} ({cred.sublabel})
                   </Text>
                 </View>
-                {cred.role === role && <Text style={{ color: colors.primary, fontWeight: '700' }}>✓</Text>}
+                {role === cred.role && (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             ))}
 
@@ -137,7 +209,7 @@ export const Header: React.FC = () => {
               style={[styles.modalCloseButton, { backgroundColor: colors.bgSubtle }]}
               onPress={() => setShowRoleModal(false)}
             >
-              <Text style={{ color: colors.textMain, fontWeight: '600' }}>{t('cancel')}</Text>
+              <Text style={{ color: colors.textMain, fontWeight: '600' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -147,68 +219,95 @@ export const Header: React.FC = () => {
       <Modal visible={showLangModal} transparent animationType="fade" onRequestClose={() => setShowLangModal(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowLangModal(false)}>
           <View style={[styles.modalCard, { backgroundColor: colors.bgSurface }]}>
-            <Text style={[styles.modalTitle, { color: colors.textMain }]}>{t('language')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.textMain }]}>Choose Language / भाषा चुनें</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSubtle }]}>
+              Select your preferred Indic regional language:
+            </Text>
 
             {[
-              { code: 'en' as SupportedLanguage, label: 'English' },
               { code: 'hi' as SupportedLanguage, label: 'हिन्दी (Hindi)' },
               { code: 'mr' as SupportedLanguage, label: 'मराठी (Marathi)' },
-            ].map((item) => (
+              { code: 'en' as SupportedLanguage, label: 'English' },
+            ].map((l) => (
               <TouchableOpacity
-                key={item.code}
+                key={l.code}
                 style={[
                   styles.roleOption,
                   {
-                    backgroundColor: language === item.code ? colors.primaryLight : colors.bgSubtle,
-                    borderColor: language === item.code ? colors.primary : colors.borderLight,
+                    borderColor: language === l.code ? colors.primary : colors.borderLight,
+                    backgroundColor: language === l.code ? colors.primaryLight : colors.bgApp,
                   },
                 ]}
                 onPress={() => {
-                  setLanguage(item.code);
+                  setLanguage(l.code);
                   setShowLangModal(false);
                 }}
               >
-                <Text style={[styles.roleOptionTitle, { color: colors.textMain }]}>{item.label}</Text>
-                {language === item.code && <Text style={{ color: colors.primary, fontWeight: '700' }}>✓</Text>}
+                <Text style={[styles.roleOptionTitle, { color: colors.textMain }]}>{l.label}</Text>
+                {language === l.code && (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             ))}
+
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.bgSubtle }]}
+              onPress={() => setShowLangModal(false)}
+            >
+              <Text style={{ color: colors.textMain, fontWeight: '600' }}>Close</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* Emergency & Location Settings Modal */}
+      {/* Settings Modal */}
       <Modal visible={showSettingsModal} transparent animationType="fade" onRequestClose={() => setShowSettingsModal(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowSettingsModal(false)}>
           <View style={[styles.modalCard, { backgroundColor: colors.bgSurface }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={[styles.modalTitle, { color: colors.textMain }]}>Settings</Text>
-              <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
-                <Ionicons name="close" size={22} color={colors.textSubtle} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.settingRow, { borderBottomColor: colors.borderLight }]}>
+            <Text style={[styles.modalTitle, { color: colors.textMain }]}>Settings & Preferences</Text>
+            
+            {/* Elderly mode switch in settings */}
+            <View style={[styles.settingRow, { borderColor: colors.borderLight }]}>
               <View style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={[styles.settingLabel, { color: colors.textMain }]}>
-                  Share my location for emergency alerts
+                  👵 Senior Citizen / Elderly Mode
                 </Text>
                 <Text style={[styles.settingSub, { color: colors.textSubtle }]}>
-                  When active, your location is securely updated every 30s so you can be reached or help someone in an emergency within 5 km.
+                  Giant high-contrast buttons, large text, and voice audio readouts
+                </Text>
+              </View>
+              <Switch
+                value={isElderlyMode}
+                onValueChange={toggleElderlyMode}
+                trackColor={{ false: colors.borderMedium, true: colors.primary }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            {/* Location Sharing */}
+            <View style={[styles.settingRow, { borderColor: colors.borderLight }]}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={[styles.settingLabel, { color: colors.textMain }]}>
+                  5km SOS Geo-Fencing
+                </Text>
+                <Text style={[styles.settingSub, { color: colors.textSubtle }]}>
+                  Share live GPS with nearby community ASHA workers and ambulances
                 </Text>
               </View>
               <Switch
                 value={isSharingEnabled}
-                onValueChange={(val) => setIsSharingEnabled(val)}
-                trackColor={{ false: colors.bgSubtle, true: colors.primaryLight }}
-                thumbColor={isSharingEnabled ? colors.primary : '#94A3B8'}
+                onValueChange={setIsSharingEnabled}
+                trackColor={{ false: colors.borderMedium, true: colors.primary }}
+                thumbColor="#FFFFFF"
               />
             </View>
 
-            <View style={{ marginTop: 14 }}>
-              <Text style={{ fontSize: 12, color: colors.textSubtle }}>
-                Status: {isSharingEnabled ? '● Location sharing active (Opted In)' : '○ Location sharing paused'}
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: colors.bgSubtle, marginTop: 14 }]}
+              onPress={() => setShowSettingsModal(false)}
+            >
+              <Text style={{ color: colors.textMain, fontWeight: '600' }}>Done</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -219,9 +318,9 @@ export const Header: React.FC = () => {
 const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
+    gap: 10,
   },
   brandRow: {
     flexDirection: 'row',
@@ -229,14 +328,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brandTitle: {
-    fontSize: 18,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   brandSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-    maxWidth: 160,
+    marginTop: 1,
+    fontWeight: '500',
   },
   controlsRow: {
     flexDirection: 'row',
@@ -244,32 +341,59 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipButton: {
-    minWidth: 36,
-    height: 36,
+    height: 32,
+    paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  iconText: {
-    fontSize: 14,
-  },
-  roleBadge: {
-    paddingHorizontal: 10,
-    height: 36,
+  seniorToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    height: 32,
+    paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1,
-    justifyContent: 'center',
+  },
+  seniorToggleText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  roleBadge: {
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   roleBadgeText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  omniSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+  },
+  omniSearchPlaceholder: {
+    flex: 1,
+    fontWeight: '500',
+  },
+  micIndicator: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBackdrop: {
     flex: 1,

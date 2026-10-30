@@ -39,8 +39,8 @@ interface PatientDashboardScreenProps {
 
 export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ navigation }) => {
   const { user, selectedPatientId } = useAuth();
-  const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { colors, isElderlyMode, fontScale } = useTheme();
+  const { language, t } = useLanguage();
 
   const [doses, setDoses] = useState<ScheduledDose[]>([]);
   const [loading, setLoading] = useState(true);
@@ -404,6 +404,26 @@ export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ 
     }
   };
 
+  const handleSpeakSchedule = () => {
+    if (doses.length === 0) {
+      Alert.alert(
+        language === 'hi' ? 'दवाइयों की जानकारी' : 'Medication Audio',
+        language === 'hi' ? 'आज आपकी कोई दवा शेड्यूल नहीं है।' : 'You have no medicines scheduled for today.'
+      );
+      return;
+    }
+    const pending = doses.filter((d) => d.status === 'PENDING');
+    const taken = doses.filter((d) => d.status === 'TAKEN');
+    const msg = language === 'hi'
+      ? `नमस्ते! आज आपकी कुल ${doses.length} दवाइयाँ हैं।\n\n• ले ली गईं: ${taken.length}\n• बाकी दवाइयाँ: ${pending.length}\n\nबाकी दवाइयों के नाम:\n${pending.map((p, idx) => `${idx + 1}. ${p.medicationName} (${p.timeSlot || 'दैनिक'})`).join('\n')}`
+      : `Hello! You have ${doses.length} scheduled doses for today.\n\n• Taken: ${taken.length}\n• Pending: ${pending.length}\n\nPending medicines:\n${pending.map((p, idx) => `${idx + 1}. ${p.medicationName} (${p.timeSlot || 'Daily'})`).join('\n')}`;
+
+    Alert.alert(
+      language === 'hi' ? '🔊 आरोग्य सेवा आवाज़ सहायक' : '🔊 Aarogya Audio Assistant',
+      msg
+    );
+  };
+
   const toggleTimeSlot = (slot: TimeSlot) => {
     if (medTimes.includes(slot)) {
       if (medTimes.length > 1) setMedTimes(medTimes.filter((s) => s !== slot));
@@ -442,13 +462,44 @@ export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ 
 
         {/* Welcome Banner */}
         <View style={styles.welcomeBanner}>
-          <Text style={[styles.greetingText, { color: colors.textMain }]}>
+          <Text style={[styles.greetingText, { color: colors.textMain, fontSize: (isElderlyMode ? 22 : 18) }]}>
             Namaste, {user?.displayName || 'Patient'}
           </Text>
           <Text style={[styles.subGreeting, { color: colors.textSubtle }]}>
             Rural Health Workstation • Patient ID: {patientId.slice(0, 8)}...
           </Text>
         </View>
+
+        {/* Senior Care Audio Assistant Bar */}
+        <TouchableOpacity
+          onPress={handleSpeakSchedule}
+          activeOpacity={0.8}
+          style={{
+            backgroundColor: isElderlyMode ? '#FEF3C7' : colors.primaryLight,
+            borderColor: isElderlyMode ? '#D97706' : colors.primaryBorder,
+            borderWidth: 1.5,
+            borderRadius: 14,
+            padding: 14,
+            marginBottom: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            minHeight: isElderlyMode ? 64 : 48,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <Ionicons name="volume-high" size={isElderlyMode ? 28 : 22} color={isElderlyMode ? '#D97706' : colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: isElderlyMode ? 16 : 14, fontWeight: '800', color: isElderlyMode ? '#92400E' : colors.primary }}>
+                {language === 'hi' ? '🔊 आज की दवाइयाँ बोलकर सुनें' : '🔊 Listen to Today’s Medicine Schedule'}
+              </Text>
+              <Text style={{ fontSize: isElderlyMode ? 13 : 11, color: colors.textSubtle, marginTop: 2 }}>
+                {language === 'hi' ? 'बुज़ुर्गों के लिए विशेष आवाज़ सहायक' : 'One-tap spoken audio guidance for seniors'}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="play-circle" size={isElderlyMode ? 32 : 24} color={isElderlyMode ? '#D97706' : colors.primary} />
+        </TouchableOpacity>
 
         {/* Nearby Emergency SOS Banner */}
         <TouchableOpacity
@@ -462,6 +513,7 @@ export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ 
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            minHeight: isElderlyMode ? 62 : 48,
           }}
           onPress={() => setIsNearbySosOpen(true)}
           activeOpacity={0.8}
@@ -480,7 +532,7 @@ export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ 
               <Ionicons name="warning-outline" size={20} color="#DC2626" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#B91C1C' }}>
+              <Text style={{ fontSize: isElderlyMode ? 15 : 13, fontWeight: '700', color: '#B91C1C' }}>
                 Active Emergencies Around You
               </Text>
               <Text style={{ fontSize: 11, color: '#991B1B', marginTop: 1 }}>
@@ -493,6 +545,36 @@ export const PatientDashboardScreen: React.FC<PatientDashboardScreenProps> = ({ 
 
         {/* Quick Action Navigation Grid */}
         <View style={styles.actionGrid}>
+          {/* AI Symptom Triage (New Backend Feature in Mobile) */}
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: colors.bgSurface, borderColor: '#10B981', borderWidth: 1.5 }]}
+            onPress={() => navigation.navigate('Triage')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: '#ECFDF5' }]}>
+              <Ionicons name="pulse" size={22} color="#059669" />
+            </View>
+            <Text style={[styles.actionTitle, { color: colors.textMain }]}>AI Symptom Triage</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textSubtle }]}>
+              Qwen Clinical Risk Check
+            </Text>
+          </TouchableOpacity>
+
+          {/* Digital Health Pass & ABHA (New Backend Feature in Mobile) */}
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: colors.bgSurface, borderColor: '#3B82F6', borderWidth: 1.5 }]}
+            onPress={() => navigation.navigate('Records')}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="folder-open" size={22} color="#2563EB" />
+            </View>
+            <Text style={[styles.actionTitle, { color: colors.textMain }]}>Health Pass & ABHA</Text>
+            <Text style={[styles.actionSubtitle, { color: colors.textSubtle }]}>
+              Vitals, BP & Records
+            </Text>
+          </TouchableOpacity>
+
           {/* Talk to AI */}
           <TouchableOpacity
             style={[styles.actionCard, { backgroundColor: colors.bgSurface, borderColor: colors.borderLight }]}

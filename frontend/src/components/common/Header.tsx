@@ -26,7 +26,17 @@ import { UserProfileModal } from './UserProfileModal';
 
 export const Header: React.FC = () => {
   const { user, role, isAuthenticated, logout, switchDemoRole } = useAuth();
-  const { language, setLanguage, isHighContrast, toggleHighContrast, fontSize, cycleFontSize, t } = useLanguage();
+  const {
+    language,
+    setLanguage,
+    isHighContrast,
+    toggleHighContrast,
+    fontSize,
+    cycleFontSize,
+    isElderlyMode,
+    toggleElderlyMode,
+    t,
+  } = useLanguage();
   const { setIsSosModalOpen, currentCoords } = useSos();
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -188,6 +198,28 @@ export const Header: React.FC = () => {
               <strong style={{ fontSize: fontSize === 'xlarge' ? '1.1rem' : fontSize === 'large' ? '0.95rem' : '0.85rem' }}>
                 A{fontSize === 'xlarge' ? '++' : fontSize === 'large' ? '+' : ''}
               </strong>
+            </button>
+
+            {/* Senior Citizen / Elderly Mode Toggle */}
+            <button
+              className={`btn ${isElderlyMode ? 'btn-warning' : 'btn-outline'}`}
+              onClick={toggleElderlyMode}
+              title="Senior Citizen / Elderly Mode (बड़ा फ़ॉन्ट व आसान डिज़ाइन)"
+              style={{
+                minHeight: '38px',
+                padding: '0 0.65rem',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                borderColor: isElderlyMode ? '#d97706' : 'var(--border-medium)',
+                backgroundColor: isElderlyMode ? '#fef3c7' : 'transparent',
+                color: isElderlyMode ? '#92400e' : 'var(--text-main)',
+              }}
+            >
+              <span>👵</span>
+              <span>{isElderlyMode ? 'वृद्ध Mode ON' : 'वृद्ध कल्याण'}</span>
             </button>
 
             {/* Aarogya Mitra Voice Call Button */}
